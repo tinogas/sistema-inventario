@@ -1,0 +1,7 @@
+# Bloquear ejecución de PHP en la carpeta de uploads
+php_flag engine off
+Options -ExecCGI
+RemoveHandler .php .php3 .php5 .php7 .php8 .phtml .shtml .pl .py .cgi
+AddType text/plain .php .php3 .php5 .php7 .php8
+Order Allow,Deny
+Deny from all

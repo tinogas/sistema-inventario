@@ -1,0 +1,31 @@
+# Configuración local (credenciales de BD)
+public_html/inventario/config/database.php
+
+# Archivos subidos por usuarios
+public_html/inventario/uploads/cfdi/*.xml
+
+# Setup (solo usar en instalación, no en producción)
+public_html/inventario/setup.php
+
+# Logs y caché
+*.log
+*.cache
+
+# Variables de entorno
+.env
+.env.local
+
+# Editores e IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+Thumbs.db
+.DS_Store
+
+# Dependencias (si se agrega Composer en el futuro)
+vendor/
+
+# Herramientas de instalación local
+tools/
