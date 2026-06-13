@@ -42,9 +42,26 @@
 
         /* Botón de impresión (no aparece al imprimir) */
         .btn-print { position:fixed; top:20px; right:20px; background:#f59e0b; color:#fff; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-size:14px; font-weight:bold; }
+
+        @page {
+            size: letter portrait;   /* 8.5in × 11in */
+            margin: 1.5cm 1.8cm;     /* márgenes cómodos para carta */
+        }
+
         @media print {
             .btn-print { display:none; }
-            body { padding:0; }
+            body  { padding:0; background:#fff; font-size:11px; }
+            .page { max-width:100%; }
+
+            /* Evitar que las secciones se corten entre páginas */
+            .seccion, .firma-section { break-inside:avoid; }
+            .partidas thead { display:table-header-group; } /* repite encabezado si hay salto */
+            .partidas tfoot { display:table-footer-group; }
+            .nota-fiscal    { break-inside:avoid; background:#fef9c3 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+            /* Forzar colores en impresión */
+            .membrete { border-bottom-color:#f59e0b !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+            .total-final { color:#f59e0b !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
         }
     </style>
 </head>
