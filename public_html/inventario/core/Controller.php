@@ -38,12 +38,20 @@ class Controller
 
     protected function render(string $vista, array $datos = []): void
     {
+        // Derivar vistaPath automáticamente: "modulo/nombre" → modules/modulo/views/nombre.php
+        $partes    = explode('/', $vista);
+        $vistaPath = count($partes) === 2
+            ? BASE_PATH . '/modules/' . $partes[0] . '/views/' . $partes[1] . '.php'
+            : BASE_PATH . '/modules/' . $vista . '.php';
+
+        // extract puede sobreescribir $vistaPath si el controller lo pasa explícitamente
         extract($datos);
-        $flash    = Session::getFlash();
-        $usuario  = Auth::usuario();
-        $csrf     = Session::getCsrfToken();
-        $appName  = APP_NAME;
-        $appUrl   = APP_URL;
+
+        $flash   = Session::getFlash();
+        $usuario = Auth::usuario();
+        $csrf    = Session::getCsrfToken();
+        $appName = APP_NAME;
+        $appUrl  = APP_URL;
 
         require_once BASE_PATH . '/shared/views/layout.php';
     }
