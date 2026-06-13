@@ -91,6 +91,9 @@
         <a href="<?= $appUrl ?>/?modulo=dashboard" class="sidebar-link <?= ($_GET['modulo'] ?? '') === 'dashboard' ? 'active' : '' ?>">
             <i class="bi bi-speedometer2"></i> Dashboard
         </a>
+        <a href="<?= $appUrl ?>/?modulo=facturas" class="sidebar-link <?= ($_GET['modulo'] ?? '') === 'facturas' ? 'active' : '' ?>">
+            <i class="bi bi-receipt text-warning"></i> Facturas
+        </a>
         <a href="<?= $appUrl ?>/?modulo=entradas" class="sidebar-link <?= ($_GET['modulo'] ?? '') === 'entradas' ? 'active' : '' ?>">
             <i class="bi bi-box-arrow-in-down-right text-success"></i> Entradas
         </a>
