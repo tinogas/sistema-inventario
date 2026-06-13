@@ -134,6 +134,9 @@
 
         <?php if ($usuario['rol'] === 'admin'): ?>
         <div class="sidebar-section mt-2">Administración</div>
+        <a href="<?= $appUrl ?>/?modulo=sucursales" class="sidebar-link <?= ($_GET['modulo'] ?? '') === 'sucursales' ? 'active' : '' ?>">
+            <i class="bi bi-building"></i> Sucursales
+        </a>
         <a href="<?= $appUrl ?>/?modulo=usuarios" class="sidebar-link <?= ($_GET['modulo'] ?? '') === 'usuarios' ? 'active' : '' ?>">
             <i class="bi bi-people"></i> Usuarios
         </a>
