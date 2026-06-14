@@ -19,6 +19,7 @@ class Router
         'facturas'   => ['clase' => 'FacturaController',   'archivo' => 'modules/facturas/FacturaController.php'],
         'empresa'    => ['clase' => 'EmpresaController',   'archivo' => 'modules/empresa/EmpresaController.php'],
         'backups'    => ['clase' => 'BackupController',    'archivo' => 'modules/backups/BackupController.php'],
+        'basedatos'  => ['clase' => 'BaseDatosController', 'archivo' => 'modules/basedatos/BaseDatosController.php'],
     ];
 
     public static function dispatch(): void

@@ -153,6 +153,9 @@
         <a href="<?= $appUrl ?>/?modulo=backups" class="sidebar-link <?= ($_GET['modulo'] ?? '') === 'backups' ? 'active' : '' ?>">
             <i class="bi bi-database-fill-gear"></i> Respaldos BD
         </a>
+        <a href="<?= $appUrl ?>/?modulo=basedatos" class="sidebar-link <?= ($_GET['modulo'] ?? '') === 'basedatos' ? 'active' : '' ?>">
+            <i class="bi bi-hdd-stack"></i> Base de datos
+        </a>
         <?php endif; ?>
     </nav>
 </div>
