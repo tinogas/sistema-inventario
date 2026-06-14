@@ -31,7 +31,11 @@
 
             <!-- Foto -->
             <div class="mb-3 text-center">
-                <?php $fotoActual = $datos['foto'] ?? ($usuario['foto'] ?? null); ?>
+                <?php
+                    // OJO: aquí $usuario es el usuario LOGUEADO (lo inyecta el layout),
+                    // NO el usuario que se edita. La foto del editado viene en $datos['foto'].
+                    $fotoActual = $datos['foto'] ?? null;
+                ?>
                 <img id="previewFoto"
                      src="<?= foto_o_avatar($fotoActual, $datos['nombre'] ?: 'Usuario', $appUrl, 128) ?>"
                      alt="Foto" class="rounded-circle border" style="width:120px;height:120px;object-fit:cover">

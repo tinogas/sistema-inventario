@@ -33,3 +33,6 @@ tools/
 # Fotos subidas (conservar carpeta, ignorar contenido)
 public_html/inventario/uploads/fotos/*
 !public_html/inventario/uploads/fotos/.gitkeep
+
+# Archivos de respaldo de BD (no versionar)
+public_html/inventario/backups/*.sql

@@ -18,6 +18,7 @@ class Router
         'sucursales' => ['clase' => 'SucursalController',  'archivo' => 'modules/sucursales/SucursalController.php'],
         'facturas'   => ['clase' => 'FacturaController',   'archivo' => 'modules/facturas/FacturaController.php'],
         'empresa'    => ['clase' => 'EmpresaController',   'archivo' => 'modules/empresa/EmpresaController.php'],
+        'backups'    => ['clase' => 'BackupController',    'archivo' => 'modules/backups/BackupController.php'],
     ];
 
     public static function dispatch(): void
