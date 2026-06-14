@@ -26,8 +26,8 @@ class Router
 
         // Módulo por defecto si no está autenticado
         if (!Auth::estaAutenticado() && $modulo !== 'auth') {
-            $modulo = 'auth';
-            $accion = 'login';
+            header('Location: ' . APP_URL . '/?modulo=auth&accion=login');
+            exit;
         }
 
         if (!isset(self::$rutas[$modulo])) {

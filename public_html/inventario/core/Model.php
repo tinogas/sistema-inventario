@@ -42,20 +42,59 @@ class Model
         return (int) $this->db->lastInsertId();
     }
 
+    // ── Transacciones anidadas ──────────────────────────────────────────
+    // PDO no soporta transacciones anidadas y todos los modelos comparten la
+    // misma conexión singleton. Cuando un método transaccional (p.ej.
+    // FacturaModel::emitir) invoca a otro (SalidaModel::confirmar), ambos llaman
+    // beginTransaction sobre la misma conexión. Usamos un contador ESTÁTICO
+    // (compartido entre todas las instancias) para abrir/cerrar la transacción
+    // real solo en el nivel más externo. Si una operación interna hace rollback,
+    // se marca toda la transacción como "rollback-only" y el commit externo la
+    // revierte, evitando confirmaciones parciales.
+    private static int  $txLevel        = 0;
+    private static bool $txRollbackOnly = false;
+
     protected function beginTransaction(): void
     {
-        $this->db->beginTransaction();
+        if (self::$txLevel === 0) {
+            $this->db->beginTransaction();
+            self::$txRollbackOnly = false;
+        }
+        self::$txLevel++;
     }
 
     protected function commit(): void
     {
-        $this->db->commit();
+        if (self::$txLevel === 0) {
+            return;
+        }
+        self::$txLevel--;
+        if (self::$txLevel === 0) {
+            if (self::$txRollbackOnly) {
+                if ($this->db->inTransaction()) {
+                    $this->db->rollBack();
+                }
+                self::$txRollbackOnly = false;
+                throw new RuntimeException('Transacción revertida: una operación interna falló.');
+            }
+            $this->db->commit();
+        }
     }
 
     protected function rollback(): void
     {
-        if ($this->db->inTransaction()) {
-            $this->db->rollBack();
+        if (self::$txLevel === 0) {
+            return;
+        }
+        self::$txLevel--;
+        if (self::$txLevel === 0) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            self::$txRollbackOnly = false;
+        } else {
+            // Nivel interno: aplazar el rollback real al nivel externo.
+            self::$txRollbackOnly = true;
         }
     }
 
@@ -73,10 +112,32 @@ class Model
         $prefijo = $prefijos[$tipo] ?? 'MOV';
         $anno    = date('Y');
 
+        // Los traspasos (salida y entrada) comparten el prefijo TRP, por lo que
+        // deben contarse juntos: de lo contrario el primer traspaso_salida y el
+        // primer traspaso_entrada generarían ambos TRP-AAAA-00001 y colisionarían
+        // en el índice UNIQUE de folio (impidiendo confirmar la recepción).
+        if ($tipo === MOV_TRASPASO_SALIDA || $tipo === MOV_TRASPASO_ENTRADA) {
+            $tiposFolio = [MOV_TRASPASO_SALIDA, MOV_TRASPASO_ENTRADA];
+        } else {
+            $tiposFolio = [$tipo];
+        }
+        $placeholders = [];
+        $params       = [':anno' => $anno];
+        foreach ($tiposFolio as $i => $t) {
+            $placeholders[]      = ":tipo{$i}";
+            $params[":tipo{$i}"] = $t;
+        }
+        $inSql = implode(',', $placeholders);
+
+        // El campo folio tiene índice UNIQUE: si dos transacciones concurrentes
+        // generan el mismo número, el segundo INSERT falla y hace rollback.
+        // NO usar LOCK TABLES aquí: provoca commit implícito y rompe la transacción
+        // activa de entradas/salidas/traspasos. La serialización fina se maneja con
+        // GET_LOCK() advisory en los modelos que lo requieren.
         $count = (int) $this->fetchColumn(
             "SELECT COUNT(*) FROM movimientos
-             WHERE tipo = :tipo AND YEAR(created_at) = :anno",
-            [':tipo' => $tipo, ':anno' => $anno]
+             WHERE tipo IN ({$inSql}) AND YEAR(created_at) = :anno",
+            $params
         );
 
         return sprintf('%s-%s-%05d', $prefijo, $anno, $count + 1);

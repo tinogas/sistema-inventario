@@ -261,7 +261,14 @@ function mostrarAlerta(msg, tipo) {
     const div = document.createElement('div');
     div.className = `alert alert-${tipo} alert-dismissible fade show position-fixed bottom-0 end-0 m-3`;
     div.style.zIndex = 9999;
-    div.innerHTML = msg + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+    const span = document.createElement('span');
+    span.textContent = msg;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-close';
+    btn.setAttribute('data-bs-dismiss', 'alert');
+    div.appendChild(span);
+    div.appendChild(btn);
     document.body.appendChild(div);
     setTimeout(() => div.remove(), 4000);
 }
@@ -328,9 +335,11 @@ document.getElementById('btnImportarCfdi').addEventListener('click', function ()
         .then(data => {
             if (data.error) { mostrarAlerta(data.error, 'danger'); return; }
             document.getElementById('uuidCfdi').value = data.uuid || '';
+            let sinMatch = 0;
             (data.partidas || []).forEach(p => {
+                if (!p.producto_id) { sinMatch++; return; } // omitir partidas sin match
                 partidas.push({
-                    producto_id:     p.producto_id || 0,
+                    producto_id:     p.producto_id,
                     codigo:          p.codigo      || p.clave_sat,
                     nombre:          p.descripcion,
                     cantidad:        parseFloat(p.cantidad)  || 1,
@@ -338,7 +347,9 @@ document.getElementById('btnImportarCfdi').addEventListener('click', function ()
                 });
             });
             renderTabla();
-            mostrarAlerta('CFDI importado: ' + (data.partidas||[]).length + ' partidas.', 'success');
+            const msg = 'CFDI importado: ' + partidas.length + ' partidas agregadas.'
+                + (sinMatch ? ' ' + sinMatch + ' concepto(s) no encontrado(s) en el catálogo y fueron omitido(s).' : '');
+            mostrarAlerta(msg, sinMatch ? 'warning' : 'success');
         })
         .catch(() => mostrarAlerta('Error al leer el XML.', 'danger'));
 });

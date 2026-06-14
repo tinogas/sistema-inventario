@@ -290,7 +290,11 @@ function mostrarAlerta(msg, tipo) {
     const div=document.createElement('div');
     div.className=`alert alert-${tipo} alert-dismissible fade show position-fixed bottom-0 end-0 m-3`;
     div.style.zIndex=9999;
-    div.innerHTML=msg+'<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+    const txt=document.createElement('span');
+    txt.textContent=msg;
+    const btn=document.createElement('button');
+    btn.type='button'; btn.className='btn-close'; btn.setAttribute('data-bs-dismiss','alert');
+    div.appendChild(txt); div.appendChild(btn);
     document.body.appendChild(div); setTimeout(()=>div.remove(),4000);
 }
 

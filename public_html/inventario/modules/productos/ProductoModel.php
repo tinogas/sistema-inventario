@@ -13,8 +13,12 @@ class ProductoModel extends Model
         $where  = ['p.activo = 1'];
 
         if ($buscar !== '') {
-            $where[]         = '(p.codigo LIKE :buscar OR p.codigo_alterno LIKE :buscar OR p.nombre LIKE :buscar OR c.nombre LIKE :buscar)';
-            $params[':buscar'] = '%' . $buscar . '%';
+            $where[] = '(p.codigo LIKE :buscar1 OR p.codigo_alterno LIKE :buscar2 OR p.nombre LIKE :buscar3 OR c.nombre LIKE :buscar4)';
+            $like = '%' . $buscar . '%';
+            $params[':buscar1'] = $like;
+            $params[':buscar2'] = $like;
+            $params[':buscar3'] = $like;
+            $params[':buscar4'] = $like;
         }
 
         if ($sucursal_id !== null) {
@@ -61,9 +65,9 @@ class ProductoModel extends Model
              FROM productos p
              LEFT JOIN categorias c ON c.id = p.categoria_id
              LEFT JOIN unidades   u ON u.id = p.unidad_id
-             WHERE (p.codigo = :cod OR p.codigo_alterno = :cod) AND p.activo = 1
+             WHERE (p.codigo = :cod1 OR p.codigo_alterno = :cod2) AND p.activo = 1
              LIMIT 1',
-            [':cod' => $codigo]
+            [':cod1' => $codigo, ':cod2' => $codigo]
         );
     }
 
@@ -76,10 +80,10 @@ class ProductoModel extends Model
             'SELECT id, codigo, codigo_alterno, nombre
              FROM productos
              WHERE activo = 1
-               AND (codigo LIKE :q OR codigo_alterno LIKE :q OR nombre LIKE :q)
+               AND (codigo LIKE :q1 OR codigo_alterno LIKE :q2 OR nombre LIKE :q3)
              ORDER BY nombre ASC
              LIMIT 8',
-            [':q' => '%' . $q . '%']
+            [':q1' => '%' . $q . '%', ':q2' => '%' . $q . '%', ':q3' => '%' . $q . '%']
         );
     }
 

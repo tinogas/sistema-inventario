@@ -52,7 +52,7 @@ class EntradaController extends Controller
                 $pid = (int) $pid;
                 $qty = (float) str_replace(',', '.', $cantidades[$i] ?? 0);
                 $prc = (float) str_replace(',', '.', $precios[$i]    ?? 0);
-                if ($pid > 0 && $qty > 0) {
+                if ($pid > 0 && $qty > 0 && $prc >= 0) {
                     $partidas[] = ['producto_id' => $pid, 'cantidad' => $qty, 'precio_unitario' => $prc];
                 }
             }
@@ -95,7 +95,7 @@ class EntradaController extends Controller
 
     public function cancelar(): void
     {
-        $this->requirePermiso('entradas.crear');
+        $this->requirePermiso('entradas.cancelar');
         $this->validarCsrf();
         $id = $this->postInt('id');
 

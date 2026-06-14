@@ -59,6 +59,7 @@
                                class="btn btn-sm btn-outline-primary me-1" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </a>
+                            <?php if ($m['activo']): ?>
                             <button type="button"
                                     class="btn btn-sm btn-outline-danger"
                                     title="Dar de baja"
@@ -68,6 +69,7 @@
                                     data-nombre="<?= htmlspecialchars($m['nombre'], ENT_QUOTES) ?>">
                                 <i class="bi bi-person-dash"></i>
                             </button>
+                            <?php endif; ?>
                         </td>
                         <?php endif; ?>
                     </tr>

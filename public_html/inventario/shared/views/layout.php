@@ -175,7 +175,7 @@
     <?php endforeach; ?>
 
     <!-- Vista del módulo -->
-    <?php require_once $vistaPath; ?>
+    <?php require $vistaPath; ?>
 </div>
 
 <script>const APP_URL = '<?= $appUrl ?>';</script>

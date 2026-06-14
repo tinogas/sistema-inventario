@@ -33,8 +33,18 @@ class SalidaController extends Controller
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->validarCsrf();
 
+            $sucursalId = $this->postInt('sucursal_id') ?: (int) Auth::sucursalActual();
+            // Verificar que la sucursal existe y está activa
+            $db  = Database::getInstance();
+            $chk = $db->prepare('SELECT id FROM sucursales WHERE id = ? AND activa = 1');
+            $chk->execute([$sucursalId]);
+            if (!$chk->fetchColumn()) {
+                Session::flash('error', 'Sucursal no válida.');
+                $this->redirect('/?modulo=salidas&accion=nueva');
+                return;
+            }
             $datos = [
-                'sucursal_id'        => $this->postInt('sucursal_id') ?: (int) Auth::sucursalActual(),
+                'sucursal_id'        => $sucursalId,
                 'mecanico_id'        => $this->postInt('mecanico_id') ?: null,
                 'servicio_id'        => $this->postInt('servicio_id') ?: null,
                 'referencia_factura' => $this->postStr('referencia_factura'),
@@ -42,7 +52,7 @@ class SalidaController extends Controller
                 'usuario_id'         => Auth::usuario()['id'],
             ];
 
-            $forzar     = isset($_POST['forzar_stock']);
+            $forzar     = isset($_POST['forzar_stock']) && Auth::tienePermiso('salidas.forzar');
             $productoIds = $_POST['producto_id']     ?? [];
             $cantidades  = $_POST['cantidad']         ?? [];
             $precios     = $_POST['precio_unitario']  ?? [];
@@ -100,5 +110,34 @@ class SalidaController extends Controller
         $titulo    = 'Detalle salida ' . $salida['folio'];
         $vistaPath = BASE_PATH . '/modules/salidas/views/detalle.php';
         $this->render('salidas/detalle', compact('titulo','salida','partidas','vistaPath'));
+    }
+
+    public function cancelar(): void
+    {
+        $this->requirePermiso('salidas.cancelar');
+        $this->validarCsrf();
+
+        $id     = $this->postInt('id');
+        $salida = $this->model->getById($id);
+
+        if (!$salida) {
+            Session::flash('error', 'Salida no encontrada.');
+            $this->redirect('/?modulo=salidas');
+            return;
+        }
+        if ($salida['estado'] !== 'confirmado') {
+            Session::flash('error', 'Solo se pueden cancelar salidas en estado confirmado.');
+            $this->redirect('/?modulo=salidas&accion=detalle&id=' . $id);
+            return;
+        }
+
+        try {
+            $this->model->cancelarMovimiento($id, $salida['sucursal_id']);
+            $this->auditoria('cancelar_salida', 'movimientos', $id);
+            Session::flash('success', 'Salida cancelada y stock revertido.');
+        } catch (RuntimeException $e) {
+            Session::flash('error', $e->getMessage());
+        }
+        $this->redirect('/?modulo=salidas&accion=detalle&id=' . $id);
     }
 }

@@ -35,7 +35,11 @@ if ($extension !== 'xml') {
 }
 
 // Guardar temporalmente
-$tmpPath = BASE_PATH . '/uploads/cfdi/' . uniqid('cfdi_', true) . '.xml';
+$cfdiDir = BASE_PATH . '/uploads/cfdi';
+if (!is_dir($cfdiDir)) {
+    mkdir($cfdiDir, 0750, true);
+}
+$tmpPath = $cfdiDir . '/' . uniqid('cfdi_', true) . '.xml';
 if (!move_uploaded_file($archivo['tmp_name'], $tmpPath)) {
     echo json_encode(['error' => 'No se pudo guardar el archivo temporal']);
     exit;
@@ -53,7 +57,9 @@ try {
 function parsearCFDI(string $xmlPath): array
 {
     libxml_use_internal_errors(true);
-    $xml = simplexml_load_file($xmlPath);
+    libxml_disable_entity_loader(true); // Deshabilita XXE (PHP < 8.0)
+    $xml = simplexml_load_file($xmlPath, 'SimpleXMLElement', LIBXML_NOENT | LIBXML_DTDLOAD | LIBXML_NONET);
+    // Para PHP 8+, usar: $xml = simplexml_load_string(file_get_contents($xmlPath), 'SimpleXMLElement', LIBXML_NONET);
 
     if ($xml === false) {
         $errores = array_map(fn($e) => $e->message, libxml_get_errors());
@@ -94,8 +100,9 @@ function parsearCFDI(string $xmlPath): array
         $claveSat    = (string) ($c['ClaveProdServ']  ?? '');
 
         // Intentar match con producto del catálogo por nombre similar
-        $productoId = 0;
-        $codigo     = '';
+        $productoId    = 0;
+        $codigo        = '';
+        $matchAprox    = false;
         if ($descripcion) {
             $stmt = $db->prepare(
                 "SELECT id, codigo FROM productos WHERE activo=1 AND nombre LIKE :q LIMIT 1"
@@ -105,16 +112,18 @@ function parsearCFDI(string $xmlPath): array
             if ($match) {
                 $productoId = $match['id'];
                 $codigo     = $match['codigo'];
+                $matchAprox = true; // match por nombre, no confirmado
             }
         }
 
         $partidas[] = [
-            'producto_id' => $productoId,
-            'codigo'      => $codigo,
-            'clave_sat'   => $claveSat,
-            'descripcion' => $descripcion,
-            'cantidad'    => $cantidad,
-            'precio'      => $precio,
+            'producto_id'    => $productoId,
+            'codigo'         => $codigo,
+            'clave_sat'      => $claveSat,
+            'descripcion'    => $descripcion,
+            'cantidad'       => $cantidad,
+            'precio'         => $precio,
+            'match_aproximado' => $matchAprox,
         ];
     }
 

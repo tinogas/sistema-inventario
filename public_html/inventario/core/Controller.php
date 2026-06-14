@@ -44,7 +44,8 @@ class Controller
             ? BASE_PATH . '/modules/' . $partes[0] . '/views/' . $partes[1] . '.php'
             : BASE_PATH . '/modules/' . $vista . '.php';
 
-        // extract puede sobreescribir $vistaPath si el controller lo pasa explícitamente
+        // Eliminar claves reservadas del layout antes de extraer para evitar colisiones
+        unset($datos['flash'], $datos['usuario'], $datos['csrf'], $datos['appName'], $datos['appUrl']);
         extract($datos);
 
         $flash   = Session::getFlash();
@@ -78,7 +79,11 @@ class Controller
 
     protected function redirectBack(): void
     {
-        $ref = $_SERVER['HTTP_REFERER'] ?? (APP_URL . '/?modulo=dashboard');
+        $ref = $_SERVER['HTTP_REFERER'] ?? '';
+        // Solo permitir Referers internos para evitar open redirect
+        if (empty($ref) || strpos($ref, APP_URL) === false) {
+            $ref = APP_URL . '/?modulo=dashboard';
+        }
         header('Location: ' . $ref);
         exit;
     }

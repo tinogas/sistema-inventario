@@ -235,6 +235,9 @@ class ProductoController extends Controller
         if ($d['precio_venta'] < 0) {
             $errores[] = 'El precio de venta no puede ser negativo.';
         }
+        if ($d['precio_costo'] < 0) {
+            $errores[] = 'El precio de costo no puede ser negativo.';
+        }
         if ($d['stock_minimo'] < 0) {
             $errores[] = 'El stock mínimo no puede ser negativo.';
         }

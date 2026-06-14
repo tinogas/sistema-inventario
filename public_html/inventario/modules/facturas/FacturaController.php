@@ -119,7 +119,7 @@ class FacturaController extends Controller
 
     public function cancelar(): void
     {
-        $this->requirePermiso('facturas.crear');
+        $this->requirePermiso('facturas.cancelar');
         $this->validarCsrf();
         $id = $this->postInt('id');
 

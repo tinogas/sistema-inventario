@@ -30,7 +30,7 @@ class ServicioController extends Controller
     // ---------------------------------------------------------------
     public function nuevo(): void
     {
-        $this->requirePermiso('servicios.ver');
+        $this->requirePermiso('servicios.editar');
 
         $errores = [];
         $datos   = ['nombre' => '', 'descripcion' => '', 'precio' => ''];
@@ -74,7 +74,7 @@ class ServicioController extends Controller
     // ---------------------------------------------------------------
     public function editar(): void
     {
-        $this->requirePermiso('servicios.ver');
+        $this->requirePermiso('servicios.editar');
 
         $id      = $this->getInt('id');
         $servicio = $this->model->getById($id);
@@ -128,7 +128,7 @@ class ServicioController extends Controller
     // ---------------------------------------------------------------
     public function eliminar(): void
     {
-        $this->requirePermiso('servicios.ver');
+        $this->requirePermiso('servicios.editar');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/?modulo=servicios');
@@ -159,6 +159,7 @@ class ServicioController extends Controller
         $q = $this->getStr('q');
         if (strlen($q) < 2) {
             $this->json([]);
+            return;
         }
         $this->json($this->model->buscarProductos($q));
     }

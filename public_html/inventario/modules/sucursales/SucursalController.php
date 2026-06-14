@@ -33,6 +33,9 @@ class SucursalController extends Controller
             ];
             if (!$datos['nombre'] || !$datos['ciudad']) {
                 Session::flash('error', 'Nombre y ciudad son obligatorios.');
+                $titulo = 'Nueva sucursal';
+                $this->render('sucursales/form', compact('titulo', 'datos'));
+                return;
             } else {
                 $id = $this->model->crear($datos);
                 $this->auditoria('crear_sucursal', 'sucursales', $id);

@@ -26,7 +26,7 @@ class ReporteModel extends Model
             ? "ss.cantidad AS stock_actual, su.nombre AS sucursal"
             : "COALESCE(SUM(ss.cantidad),0) AS stock_actual, 'Todas' AS sucursal";
 
-        $groupBy = $sucursal_id ? '' : 'GROUP BY p.id, p.codigo, p.nombre, c.nombre, u.clave, p.stock_minimo';
+        $groupBy = $sucursal_id ? '' : "GROUP BY p.id, p.codigo, p.nombre, COALESCE(c.nombre,'—'), COALESCE(u.clave,'PZA'), p.stock_minimo";
 
         return $this->fetchAll(
             "SELECT p.id, p.codigo, p.nombre AS producto,

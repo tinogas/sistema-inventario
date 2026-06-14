@@ -2,12 +2,10 @@
     <h4 class="fw-bold mb-0">
         <i class="bi bi-tools me-2 text-primary"></i>Servicios
     </h4>
-    <?php if (Auth::esAdmin() || Auth::tienePermiso('servicios.ver')): ?>
     <?php if (Auth::esAdmin()): ?>
     <a href="<?= $appUrl ?>/?modulo=servicios&accion=nuevo" class="btn btn-primary btn-sm">
         <i class="bi bi-plus-lg me-1"></i>Nuevo servicio
     </a>
-    <?php endif; ?>
     <?php endif; ?>
 </div>
 

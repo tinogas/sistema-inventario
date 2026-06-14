@@ -227,8 +227,6 @@ class FacturaModel extends Model
 
         // Si tiene movimiento de salida, revertir el stock
         if ($factura['movimiento_id']) {
-            require_once BASE_PATH . '/modules/entradas/EntradaModel.php';
-            $em = new EntradaModel();
             // Revertir la salida: sumar de vuelta el stock
             $detalle = $this->getDetalle($id);
             $this->beginTransaction();
@@ -264,13 +262,12 @@ class FacturaModel extends Model
         $this->execute(
             "INSERT INTO facturas_folios (sucursal_id, anio, ultimo)
              VALUES (:sid, :anio, 1)
-             ON DUPLICATE KEY UPDATE ultimo = ultimo + 1",
+             ON DUPLICATE KEY UPDATE ultimo = LAST_INSERT_ID(ultimo + 1)",
             [':sid' => $sucursal_id, ':anio' => $anio]
         );
-        $ultimo = (int)$this->fetchColumn(
-            'SELECT ultimo FROM facturas_folios WHERE sucursal_id=:sid AND anio=:anio',
-            [':sid' => $sucursal_id, ':anio' => $anio]
-        );
-        return sprintf('FAC-%d-%05d', $anio, $ultimo);
+        $ultimo = (int)$this->fetchColumn('SELECT LAST_INSERT_ID()');
+        // Incluir la sucursal en el folio: el contador es por sucursal+año, así que
+        // sin la sucursal dos sucursales generarían el mismo folio (colisión UNIQUE).
+        return sprintf('FAC-%d-%d-%05d', $sucursal_id, $anio, $ultimo);
     }
 }

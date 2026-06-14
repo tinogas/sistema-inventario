@@ -36,7 +36,7 @@ class TraspasoModel extends Model
     public function getById(int $traspaso_id): ?array
     {
         return $this->fetchOne(
-            "SELECT t.*, m.folio AS folio_salida, m.notas, m.sucursal_id, m.sucursal_dest_id,
+            "SELECT t.*, t.estado AS traspaso_estado, m.folio AS folio_salida, m.notas, m.sucursal_id, m.sucursal_dest_id,
                     su_o.nombre AS sucursal_origen, su_d.nombre AS sucursal_destino,
                     u.nombre AS usuario
              FROM traspasos t
@@ -73,20 +73,20 @@ class TraspasoModel extends Model
             throw new RuntimeException('La sucursal origen y destino no pueden ser la misma.');
         }
 
-        // Verificar stock en origen
-        foreach ($partidas as $p) {
-            $stock = (float) $this->fetchColumn(
-                'SELECT COALESCE(cantidad,0) FROM stock_sucursal WHERE producto_id=:pid AND sucursal_id=:sid',
-                [':pid' => $p['producto_id'], ':sid' => $datos['sucursal_origen_id']]
-            );
-            if ($stock < $p['cantidad']) {
-                $nombre = $this->fetchColumn('SELECT nombre FROM productos WHERE id=:pid', [':pid' => $p['producto_id']]);
-                throw new RuntimeException("Stock insuficiente para \"{$nombre}\" en la sucursal origen.");
-            }
-        }
-
         $this->beginTransaction();
         try {
+            // Verificar stock en origen dentro de la TX (FOR UPDATE bloquea la fila contra concurrencia)
+            foreach ($partidas as $p) {
+                $stock = (float) $this->fetchColumn(
+                    'SELECT COALESCE(cantidad,0) FROM stock_sucursal WHERE producto_id=:pid AND sucursal_id=:sid FOR UPDATE',
+                    [':pid' => $p['producto_id'], ':sid' => $datos['sucursal_origen_id']]
+                );
+                if ($stock < $p['cantidad']) {
+                    $nombre = $this->fetchColumn('SELECT nombre FROM productos WHERE id=:pid', [':pid' => $p['producto_id']]);
+                    throw new RuntimeException("Stock insuficiente para \"{$nombre}\" en la sucursal origen.");
+                }
+            }
+
             $folio = $this->generarFolio(MOV_TRASPASO_SALIDA);
 
             $this->execute(
@@ -138,14 +138,20 @@ class TraspasoModel extends Model
      */
     public function confirmarRecepcion(int $traspaso_id, array $cantidadesRecibidas, int $usuario_id): void
     {
-        $traspaso = $this->getById($traspaso_id);
+        $this->beginTransaction();
+        try {
+        // Re-leer con FOR UPDATE dentro de la TX para evitar doble confirmación concurrente
+        $traspaso = $this->fetchOne(
+            'SELECT t.*, t.estado AS traspaso_estado, m.sucursal_id, m.sucursal_dest_id, m.id AS movimiento_salida_id_lock
+             FROM traspasos t
+             INNER JOIN movimientos m ON m.id = t.movimiento_salida_id
+             WHERE t.id = :id FOR UPDATE',
+            [':id' => $traspaso_id]
+        );
         if (!$traspaso) throw new RuntimeException('Traspaso no encontrado.');
         if ($traspaso['traspaso_estado'] !== 'en_transito') throw new RuntimeException('El traspaso no está en tránsito.');
 
         $partidas = $this->getPartidas($traspaso['movimiento_salida_id']);
-
-        $this->beginTransaction();
-        try {
             // Movimiento de entrada en destino
             $folioEntrada = $this->generarFolio(MOV_TRASPASO_ENTRADA);
             $this->execute(
@@ -191,14 +197,20 @@ class TraspasoModel extends Model
 
     public function cancelar(int $traspaso_id): void
     {
-        $traspaso = $this->getById($traspaso_id);
+        $this->beginTransaction();
+        try {
+        // Re-leer con FOR UPDATE dentro de la TX para serializar contra confirmación concurrente
+        $traspaso = $this->fetchOne(
+            'SELECT t.*, t.estado AS traspaso_estado, m.sucursal_id, m.sucursal_dest_id, m.id AS movimiento_salida_id_lock
+             FROM traspasos t
+             INNER JOIN movimientos m ON m.id = t.movimiento_salida_id
+             WHERE t.id = :id FOR UPDATE',
+            [':id' => $traspaso_id]
+        );
         if (!$traspaso) throw new RuntimeException('Traspaso no encontrado.');
         if ($traspaso['traspaso_estado'] !== 'en_transito') throw new RuntimeException('Solo se pueden cancelar traspasos en tránsito.');
 
         $partidas = $this->getPartidas($traspaso['movimiento_salida_id']);
-
-        $this->beginTransaction();
-        try {
             // Revertir stock en origen
             foreach ($partidas as $p) {
                 $this->execute(

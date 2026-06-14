@@ -4,7 +4,7 @@
             <i class="bi bi-box-arrow-up-right text-danger me-2"></i>
             Salida <?= htmlspecialchars($salida['folio']) ?>
         </h4>
-        <span class="badge badge-estado-<?= $salida['estado'] ?> mt-1"><?= ucfirst($salida['estado']) ?></span>
+        <span class="badge badge-estado-<?= htmlspecialchars($salida['estado'], ENT_QUOTES, 'UTF-8') ?> mt-1"><?= htmlspecialchars(ucfirst($salida['estado']), ENT_QUOTES, 'UTF-8') ?></span>
     </div>
     <a href="<?= $appUrl ?>/?modulo=salidas" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i> Volver

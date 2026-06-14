@@ -153,3 +153,15 @@ Para dudas técnicas, revisar primero:
 2. Que el mod_rewrite de Apache esté activo (cPanel → Apache Handlers)
 3. Que PHP sea versión 8.1 o superior (cPanel → MultiPHP)
 4. Que la carpeta `uploads/cfdi/` tenga permisos de escritura (chmod 755)
+
+
+## Observaciones ##
+1.- En el Stock Actual, mostrar el stock por medio de producto compreso y expandible por sucursales con el total y que se pueda expandir. 
+2.- Que el archivo a Exportar sea un .Xlsx con tablad dimiacas contraibles por producto/sucursal.
+3.- Agregar Filtros en movimiento por Sucursal, por estado, por producto.
+4.- No funciona el +Agregar Producto cuando editas o das de alta un servicio.
+5.- Cuand pongas un precio, que seleccione el 0.00 para que al escribirlo se borre, de la otra manera, se queda el 0.0  
+6.- Esta fallando el orden para agregar un producto en la entrada. Primero se selecciona o busca el producto, luego la cantidad de compra o entrada, trae el precio unitario y hasta que se le da el boton de +agregar, entonces se agrega a la lista de abajo. Actualmente ejecuta la accion del boton en cuanto encuentra el producto. Lo mismo pasa en la Salida.
+7.- En la salida y factura, que valide la cantidad que hay en stock disponible del producto a agregar en la sucursal seleccionada antes de agregarlo para evitar reiniciar el proceso. O que solo muestre los productos de esa sucursal a la que se esta dando salida o haciendo la factura.
+8.- Cada catalogo tiene que tener su boton de imprimir y exportar a .Xlsx y .CSV.
+9.- Falta el modulo para darle mantenimiento a los datos de la empresa. Nombre, direccion, rfc, ciudad, cp, etc

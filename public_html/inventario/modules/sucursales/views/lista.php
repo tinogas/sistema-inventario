@@ -26,7 +26,7 @@
                 <?php else: ?>
                     <?php foreach ($sucursales as $s): ?>
                     <tr>
-                        <td class="text-muted"><?= $s['id'] ?></td>
+                        <td class="text-muted"><?= htmlspecialchars((string)$s['id']) ?></td>
                         <td class="fw-semibold"><?= htmlspecialchars($s['nombre']) ?></td>
                         <td><?= htmlspecialchars($s['ciudad']) ?></td>
                         <td><?= htmlspecialchars($s['direccion'] ?: '—') ?></td>
@@ -39,7 +39,7 @@
                             <?php endif; ?>
                         </td>
                         <td class="text-center">
-                            <a href="<?= $appUrl ?>/?modulo=sucursales&accion=editar&id=<?= $s['id'] ?>"
+                            <a href="<?= $appUrl ?>/?modulo=sucursales&accion=editar&id=<?= htmlspecialchars((string)$s['id']) ?>"
                                class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-pencil"></i> Editar
                             </a>

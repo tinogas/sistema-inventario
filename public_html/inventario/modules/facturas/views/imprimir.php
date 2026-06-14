@@ -89,8 +89,8 @@
                 Fecha: <?= date('d/m/Y', strtotime($factura['fecha_emision'] ?: $factura['created_at'])) ?>
             </div>
             <div style="margin-top:6px">
-                <span class="badge-estado estado-<?= $factura['estado'] ?>">
-                    <?= strtoupper($factura['estado']) ?>
+                <span class="badge-estado estado-<?= htmlspecialchars($factura['estado']) ?>">
+                    <?= htmlspecialchars(strtoupper($factura['estado'])) ?>
                 </span>
             </div>
         </div>
