@@ -165,7 +165,10 @@ class SalidaModel extends Model
                     [':mid'=>$movId, ':pid'=>$p['producto_id'], ':qty'=>$p['cantidad'], ':precio'=>$p['precio_unitario']]
                 );
 
-                // Descontar stock (puede quedar negativo si forzar=true)
+                // Descontar stock (puede quedar negativo si forzar=true).
+                // Si la fila NO existe, el INSERT debe crear cantidad NEGATIVA
+                // (−cantidad); si existe, el UPDATE resta. Antes el INSERT metía
+                // +cantidad, dejando stock positivo al sacar de un producto sin fila.
                 $this->execute(
                     "INSERT INTO stock_sucursal (producto_id, sucursal_id, cantidad)
                      VALUES (:pid, :sid, :neg)
@@ -173,7 +176,7 @@ class SalidaModel extends Model
                     [
                         ':pid'  => $p['producto_id'],
                         ':sid'  => $datos['sucursal_id'],
-                        ':neg'  => $p['cantidad'],
+                        ':neg'  => -$p['cantidad'],
                         ':neg2' => $p['cantidad'],
                     ]
                 );

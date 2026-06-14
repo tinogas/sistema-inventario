@@ -185,6 +185,34 @@ class ProductoController extends Controller
     }
 
     // -------------------------------------------------------
+    // exportarCsv — Descarga CSV con todos los productos
+    // -------------------------------------------------------
+    public function exportarCsv(): void
+    {
+        $this->requirePermiso('productos.ver');
+
+        $sucursal_id = Auth::sucursalFiltro();
+        $datos       = $this->model->getAll($sucursal_id);
+
+        if (empty($datos)) {
+            Session::flash('warning', 'No hay productos para exportar.');
+            $this->redirect('/?modulo=productos');
+        }
+
+        $filename = 'productos_' . date('Y-m-d') . '.csv';
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        $out = fopen('php://output', 'w');
+        fwrite($out, "\xEF\xBB\xBF");
+        fputcsv($out, array_keys($datos[0]), ';');
+        foreach ($datos as $fila) {
+            fputcsv($out, $fila, ';');
+        }
+        fclose($out);
+        exit;
+    }
+
+    // -------------------------------------------------------
     // buscarAjax — Endpoint JSON para autocomplete
     // -------------------------------------------------------
     public function buscarAjax(): void

@@ -59,3 +59,10 @@ function formatMXN(valor) {
 function formatNum(valor, decimales) {
     return new Intl.NumberFormat('es-MX', { minimumFractionDigits: decimales || 0 }).format(valor);
 }
+
+// Seleccionar todo el contenido de inputs numéricos al hacer foco (fix #5: evita escribir sobre "0.00")
+document.addEventListener('focusin', function (e) {
+    if (e.target.matches('input[type="number"]')) {
+        e.target.select();
+    }
+});

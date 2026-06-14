@@ -207,14 +207,19 @@ function mostrarFilaVaciaOcultar() {
 }
 
 // ----- Modal buscar producto -----
-const modalBuscar  = new bootstrap.Modal(document.getElementById('modalBuscarProducto'));
-const inputBuscar  = document.getElementById('inputBuscarProducto');
-const resultados   = document.getElementById('resultadosBusqueda');
+// Inicialización lazy: Bootstrap JS carga después de esta vista, así que no se puede
+// instanciar el Modal al parsear el script. Se crea la primera vez que se necesita.
+const inputBuscar = document.getElementById('inputBuscarProducto');
+const resultados  = document.getElementById('resultadosBusqueda');
+
+function getModalBuscar() {
+    return bootstrap.Modal.getOrCreateInstance(document.getElementById('modalBuscarProducto'));
+}
 
 document.getElementById('btnAgregarProducto').addEventListener('click', function () {
     inputBuscar.value = '';
     resultados.innerHTML = '<p class="text-muted text-center small py-2">Escribe al menos 2 caracteres.</p>';
-    modalBuscar.show();
+    getModalBuscar().show();
     setTimeout(() => inputBuscar.focus(), 300);
 });
 
@@ -258,7 +263,7 @@ function agregarProducto(p) {
     const existentes = document.querySelectorAll('#tbodyProductos .inp-pid');
     for (const inp of existentes) {
         if (parseInt(inp.value) === parseInt(p.id)) {
-            modalBuscar.hide();
+            getModalBuscar().hide();
             return;
         }
     }
@@ -281,7 +286,7 @@ function agregarProducto(p) {
             '<button type="button" class="btn btn-sm btn-outline-danger btn-quitar-fila" title="Quitar"><i class="bi bi-x"></i></button>' +
         '</td>';
     tbody.appendChild(tr);
-    modalBuscar.hide();
+    getModalBuscar().hide();
 }
 
 function escHtml(str) {

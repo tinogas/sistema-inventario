@@ -3,6 +3,19 @@ require_once BASE_PATH . '/core/Model.php';
 
 class FacturaModel extends Model
 {
+    public function __construct()
+    {
+        parent::__construct();
+        // Migración: agrega descuento_pct si no existe (compatible con MySQL y MariaDB)
+        try {
+            $this->db->exec(
+                "ALTER TABLE facturas ADD COLUMN descuento_pct DECIMAL(5,2) NOT NULL DEFAULT 0.00"
+            );
+        } catch (PDOException $e) {
+            // Columna ya existe — ignorar
+        }
+    }
+
     // ---- Listar ----
 
     public function listar(?int $sucursal_id, string $estado, string $buscar, int $pagina): array
@@ -81,34 +94,34 @@ class FacturaModel extends Model
     {
         $this->beginTransaction();
         try {
-            $campos = [
-                ':sid'    => $cab['sucursal_id'],
-                ':cli'    => $cab['cliente_nombre'],
-                ':tel'    => $cab['cliente_tel']       ?: null,
-                ':marca'  => $cab['vh_marca'],
-                ':modelo' => $cab['vh_modelo'],
-                ':anio'   => $cab['vh_anio'],
-                ':placas' => $cab['vh_placas']          ?: null,
-                ':mec'    => $cab['mecanico_id']        ?: null,
-                ':ser'    => $cab['servicio_id']        ?: null,
-                ':mo'     => $cab['mano_obra']          ?: 0,
-                ':modesc' => $cab['mano_obra_desc']     ?: null,
-                ':proneg' => $cab['referencia_proneg']  ?: null,
-                ':notas'  => $cab['notas']              ?: null,
+            $descuento_pct = max(0, min(100, (float)($cab['descuento_pct'] ?? 0)));
+        $campos = [
+                ':sid'      => $cab['sucursal_id'],
+                ':cli'      => $cab['cliente_nombre'],
+                ':tel'      => $cab['cliente_tel']       ?: null,
+                ':marca'    => $cab['vh_marca'],
+                ':modelo'   => $cab['vh_modelo'],
+                ':anio'     => $cab['vh_anio'],
+                ':placas'   => $cab['vh_placas']          ?: null,
+                ':mec'      => $cab['mecanico_id']        ?: null,
+                ':ser'      => $cab['servicio_id']        ?: null,
+                ':mo'       => $cab['mano_obra']          ?: 0,
+                ':modesc'   => $cab['mano_obra_desc']     ?: null,
+                ':proneg'   => $cab['referencia_proneg']  ?: null,
+                ':notas'    => $cab['notas']              ?: null,
+                ':desc_pct' => $descuento_pct,
             ];
 
             if ($id) {
-                // Actualizar cabecera (solo si sigue en borrador)
                 $this->execute(
                     "UPDATE facturas SET
                         sucursal_id=:sid, cliente_nombre=:cli, cliente_tel=:tel,
                         vh_marca=:marca, vh_modelo=:modelo, vh_anio=:anio, vh_placas=:placas,
                         mecanico_id=:mec, servicio_id=:ser, mano_obra=:mo, mano_obra_desc=:modesc,
-                        referencia_proneg=:proneg, notas=:notas
+                        referencia_proneg=:proneg, notas=:notas, descuento_pct=:desc_pct
                      WHERE id=:fid AND estado='borrador'",
                     array_merge($campos, [':fid' => $id])
                 );
-                // Limpiar y reinsertar detalle
                 $this->execute('DELETE FROM facturas_detalle WHERE factura_id=:fid', [':fid' => $id]);
             } else {
                 $folio = $this->generarFolioFactura((int)$cab['sucursal_id']);
@@ -119,19 +132,19 @@ class FacturaModel extends Model
                         (folio, sucursal_id, cliente_nombre, cliente_tel,
                          vh_marca, vh_modelo, vh_anio, vh_placas,
                          mecanico_id, servicio_id, mano_obra, mano_obra_desc,
-                         referencia_proneg, notas, estado, usuario_id)
+                         referencia_proneg, notas, descuento_pct, estado, usuario_id)
                      VALUES
                         (:folio, :sid, :cli, :tel,
                          :marca, :modelo, :anio, :placas,
                          :mec, :ser, :mo, :modesc,
-                         :proneg, :notas, 'borrador', :uid)",
+                         :proneg, :notas, :desc_pct, 'borrador', :uid)",
                     $campos
                 );
                 $id = $this->lastInsertId();
             }
 
-            // Insertar partidas y calcular totales
-            $subtotal = 0.0;
+            // Calcular totales con descuento
+            $subtotal    = 0.0;
             foreach ($partidas as $p) {
                 $this->execute(
                     'INSERT INTO facturas_detalle (factura_id, producto_id, cantidad, precio_unitario)
@@ -140,7 +153,8 @@ class FacturaModel extends Model
                 );
                 $subtotal += $p['cantidad'] * $p['precio_unitario'];
             }
-            $total = $subtotal + (float)($cab['mano_obra'] ?? 0);
+            $bruto = $subtotal + (float)($cab['mano_obra'] ?? 0);
+            $total = $descuento_pct > 0 ? round($bruto * (1 - $descuento_pct / 100), 2) : $bruto;
             $this->execute(
                 'UPDATE facturas SET subtotal=:sub, total=:tot WHERE id=:id',
                 [':sub'=>$subtotal, ':tot'=>$total, ':id'=>$id]

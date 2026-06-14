@@ -27,6 +27,44 @@ class MecanicoController extends Controller
     }
 
     // ---------------------------------------------------------------
+    // GET /?modulo=mecanicos&accion=exportar_csv
+    // ---------------------------------------------------------------
+    public function exportarCsv(): void
+    {
+        $this->requirePermiso('mecanicos.ver');
+
+        $sucursal_id = Auth::sucursalFiltro();
+        $filas       = $this->model->listar($sucursal_id);
+
+        $datos = array_map(function (array $m): array {
+            return [
+                'ID'        => $m['id'],
+                'Nombre'    => $m['nombre'],
+                'Sucursal'  => $m['sucursal_nombre'],
+                'Telefono'  => $m['telefono'] ?? '',
+                'Activo'    => $m['activo'] ? 'Sí' : 'No',
+            ];
+        }, $filas);
+
+        if (empty($datos)) {
+            Session::flash('warning', 'No hay mecánicos para exportar.');
+            $this->redirect('/?modulo=mecanicos');
+        }
+
+        $filename = 'mecanicos_' . date('Y-m-d') . '.csv';
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        $out = fopen('php://output', 'w');
+        fwrite($out, "\xEF\xBB\xBF");
+        fputcsv($out, array_keys($datos[0]), ';');
+        foreach ($datos as $fila) {
+            fputcsv($out, $fila, ';');
+        }
+        fclose($out);
+        exit;
+    }
+
+    // ---------------------------------------------------------------
     // GET/POST /?modulo=mecanicos&accion=nuevo
     // ---------------------------------------------------------------
     public function nuevo(): void

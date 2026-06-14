@@ -75,9 +75,12 @@
                 <li><span class="dropdown-item-text text-muted small"><?= ucfirst($usuario['rol']) ?></span></li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
-                    <a class="dropdown-item text-danger" href="<?= $appUrl ?>/?modulo=auth&accion=logout">
-                        <i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión
-                    </a>
+                    <form method="POST" action="<?= $appUrl ?>/?modulo=auth&accion=logout" class="m-0">
+                        <input type="hidden" name="_csrf" value="<?= $csrf ?>">
+                        <button type="submit" class="dropdown-item text-danger">
+                            <i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión
+                        </button>
+                    </form>
                 </li>
             </ul>
         </div>
@@ -142,6 +145,9 @@
         </a>
         <a href="<?= $appUrl ?>/?modulo=usuarios" class="sidebar-link <?= ($_GET['modulo'] ?? '') === 'usuarios' ? 'active' : '' ?>">
             <i class="bi bi-people"></i> Usuarios
+        </a>
+        <a href="<?= $appUrl ?>/?modulo=empresa" class="sidebar-link <?= ($_GET['modulo'] ?? '') === 'empresa' ? 'active' : '' ?>">
+            <i class="bi bi-building-gear"></i> Datos de empresa
         </a>
         <?php endif; ?>
     </nav>

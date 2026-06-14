@@ -62,6 +62,37 @@ class TraspasoModel extends Model
     }
 
     /**
+     * Partidas del traspaso con cantidad enviada vs recibida vs devuelta.
+     * - enviada:  del movimiento de salida
+     * - recibida: del movimiento de entrada (null si aún en tránsito)
+     * - devuelta: enviada − recibida (lo que regresó al origen), null si en tránsito
+     */
+    public function getPartidasComparadas(array $traspaso): array
+    {
+        $partidas = $this->getPartidas((int) $traspaso['movimiento_salida_id']);
+
+        $recibidaMap = [];
+        if (!empty($traspaso['movimiento_entrada_id'])) {
+            $rows = $this->fetchAll(
+                "SELECT producto_id, cantidad FROM movimientos_detalle WHERE movimiento_id = :mid",
+                [':mid' => $traspaso['movimiento_entrada_id']]
+            );
+            foreach ($rows as $r) {
+                $recibidaMap[(int) $r['producto_id']] = (float) $r['cantidad'];
+            }
+        }
+
+        $recibido = ($traspaso['traspaso_estado'] ?? '') === 'recibido';
+        foreach ($partidas as &$p) {
+            $p['enviada']  = (float) $p['cantidad'];
+            $p['recibida'] = $recibido ? (float) ($recibidaMap[(int) $p['producto_id']] ?? 0) : null;
+            $p['devuelta'] = ($p['recibida'] !== null) ? max(0, $p['enviada'] - $p['recibida']) : null;
+        }
+        unset($p);
+        return $partidas;
+    }
+
+    /**
      * Crea el traspaso: descuenta stock en origen, estado "en_transito".
      */
     public function crear(array $datos, array $partidas): int
@@ -162,21 +193,53 @@ class TraspasoModel extends Model
             );
             $movEntradaId = $this->lastInsertId();
 
+            $hayDevolucion = false;
             foreach ($partidas as $p) {
-                $cantRecibida = (float) ($cantidadesRecibidas[$p['producto_id']] ?? $p['cantidad']);
-                if ($cantRecibida <= 0) continue;
+                $cantEnviada  = (float) $p['cantidad'];
+                $cantRecibida = isset($cantidadesRecibidas[$p['producto_id']])
+                    ? (float) str_replace(',', '.', (string) $cantidadesRecibidas[$p['producto_id']])
+                    : $cantEnviada;
 
+                if ($cantRecibida < 0) $cantRecibida = 0;
+                if ($cantRecibida > $cantEnviada) {
+                    $nombre = $this->fetchColumn('SELECT nombre FROM productos WHERE id=:pid', [':pid' => $p['producto_id']]);
+                    throw new RuntimeException(
+                        "No puedes recibir más ({$cantRecibida}) de lo enviado ({$cantEnviada}) para \"{$nombre}\"."
+                    );
+                }
+
+                // Detalle de entrada (lo realmente recibido) y crédito al DESTINO
+                if ($cantRecibida > 0) {
+                    $this->execute(
+                        "INSERT INTO movimientos_detalle (movimiento_id, producto_id, cantidad, precio_unitario)
+                         VALUES (:mid, :pid, :qty, 0)",
+                        [':mid' => $movEntradaId, ':pid' => $p['producto_id'], ':qty' => $cantRecibida]
+                    );
+                    $this->execute(
+                        "INSERT INTO stock_sucursal (producto_id, sucursal_id, cantidad)
+                         VALUES (:pid, :sid, :qty)
+                         ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)",
+                        [':pid' => $p['producto_id'], ':sid' => $traspaso['sucursal_dest_id'], ':qty' => $cantRecibida]
+                    );
+                }
+
+                // Devolver al ORIGEN lo enviado que NO se recibió
+                $devuelta = $cantEnviada - $cantRecibida;
+                if ($devuelta > 0) {
+                    $hayDevolucion = true;
+                    $this->execute(
+                        "UPDATE stock_sucursal SET cantidad = cantidad + :qty
+                         WHERE producto_id = :pid AND sucursal_id = :sid",
+                        [':qty' => $devuelta, ':pid' => $p['producto_id'], ':sid' => $traspaso['sucursal_id']]
+                    );
+                }
+            }
+
+            // Si hubo faltante, dejar constancia en el movimiento de entrada
+            if ($hayDevolucion) {
                 $this->execute(
-                    "INSERT INTO movimientos_detalle (movimiento_id, producto_id, cantidad, precio_unitario)
-                     VALUES (:mid, :pid, :qty, 0)",
-                    [':mid' => $movEntradaId, ':pid' => $p['producto_id'], ':qty' => $cantRecibida]
-                );
-                // Acreditar en destino
-                $this->execute(
-                    "INSERT INTO stock_sucursal (producto_id, sucursal_id, cantidad)
-                     VALUES (:pid, :sid, :qty)
-                     ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)",
-                    [':pid' => $p['producto_id'], ':sid' => $traspaso['sucursal_dest_id'], ':qty' => $cantRecibida]
+                    "UPDATE movimientos SET notas = 'Recepción parcial: lo no recibido se devolvió al stock de origen' WHERE id = :id",
+                    [':id' => $movEntradaId]
                 );
             }
 

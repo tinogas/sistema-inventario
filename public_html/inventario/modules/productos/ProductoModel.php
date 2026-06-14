@@ -55,6 +55,42 @@ class ProductoModel extends Model
     }
 
     /**
+     * Todos los productos para exportación CSV (sin paginación).
+     */
+    public function getAll(?int $sucursal_id = null): array
+    {
+        if ($sucursal_id !== null) {
+            $stockExpr = 'COALESCE(ss.cantidad, 0)';
+            $stockJoin = 'LEFT JOIN stock_sucursal ss ON ss.producto_id = p.id AND ss.sucursal_id = :suc_id';
+            $params    = [':suc_id' => $sucursal_id];
+        } else {
+            $stockExpr = 'COALESCE(stot.total_stock, 0)';
+            $stockJoin = 'LEFT JOIN (SELECT producto_id, SUM(cantidad) AS total_stock FROM stock_sucursal GROUP BY producto_id) stot ON stot.producto_id = p.id';
+            $params    = [];
+        }
+
+        return $this->fetchAll(
+            "SELECT p.id,
+                    p.codigo,
+                    p.codigo_alterno,
+                    p.nombre,
+                    c.nombre        AS categoria,
+                    u.clave         AS unidad,
+                    {$stockExpr}    AS stock_actual,
+                    p.stock_minimo,
+                    p.precio_costo,
+                    p.precio_venta,
+                    IF(p.activo, 'Sí', 'No') AS activo
+             FROM productos p
+             LEFT JOIN categorias c ON c.id = p.categoria_id
+             LEFT JOIN unidades   u ON u.id = p.unidad_id
+             {$stockJoin}
+             ORDER BY p.nombre ASC",
+            $params
+        );
+    }
+
+    /**
      * Busca un producto por código exacto o código alterno.
      * Retorna null si no existe.
      */

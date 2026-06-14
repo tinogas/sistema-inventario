@@ -26,6 +26,43 @@ class ServicioController extends Controller
     }
 
     // ---------------------------------------------------------------
+    // GET /?modulo=servicios&accion=exportar_csv
+    // ---------------------------------------------------------------
+    public function exportarCsv(): void
+    {
+        $this->requirePermiso('servicios.ver');
+
+        $filas = $this->model->listar();
+
+        $datos = array_map(function (array $s): array {
+            return [
+                'ID'          => $s['id'],
+                'Nombre'      => $s['nombre'],
+                'Descripcion' => $s['descripcion'] ?? '',
+                'Precio'      => number_format((float) $s['precio'], 2, '.', ''),
+                'Activo'      => $s['activo'] ? 'Sí' : 'No',
+            ];
+        }, $filas);
+
+        if (empty($datos)) {
+            Session::flash('warning', 'No hay servicios para exportar.');
+            $this->redirect('/?modulo=servicios');
+        }
+
+        $filename = 'servicios_' . date('Y-m-d') . '.csv';
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        $out = fopen('php://output', 'w');
+        fwrite($out, "\xEF\xBB\xBF");
+        fputcsv($out, array_keys($datos[0]), ';');
+        foreach ($datos as $fila) {
+            fputcsv($out, $fila, ';');
+        }
+        fclose($out);
+        exit;
+    }
+
+    // ---------------------------------------------------------------
     // GET/POST /?modulo=servicios&accion=nuevo
     // ---------------------------------------------------------------
     public function nuevo(): void

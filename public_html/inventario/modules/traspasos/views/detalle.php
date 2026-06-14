@@ -47,34 +47,57 @@
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
+            <?php
+                $enTransito = $traspaso['traspaso_estado'] === 'en_transito';
+                $recibido   = $traspaso['traspaso_estado'] === 'recibido';
+                $puedeConfirmar = $enTransito && Auth::tienePermiso('traspasos.confirmar');
+            ?>
             <table class="table table-sm mb-0">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Código</th><th>Producto</th><th>Unidad</th><th class="text-end">Cantidad enviada</th>
-                    <?php if ($traspaso['traspaso_estado'] === 'en_transito' && Auth::tienePermiso('traspasos.confirmar')): ?>
-                    <th class="text-end">Cantidad recibida</th>
-                    <?php endif; ?>
+                    <tr>
+                        <th>#</th><th>Código</th><th>Producto</th><th>Unidad</th>
+                        <th class="text-end">Enviada</th>
+                        <?php if ($puedeConfirmar): ?>
+                        <th class="text-end">Cantidad recibida</th>
+                        <?php elseif ($recibido): ?>
+                        <th class="text-end">Recibida</th>
+                        <th class="text-end">Devuelta a origen</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
                 <?php foreach ($partidas as $i => $p): ?>
-                <tr>
+                <?php $faltante = $recibido && $p['devuelta'] !== null && $p['devuelta'] > 0; ?>
+                <tr class="<?= $faltante ? 'table-warning' : '' ?>">
                     <td><?= $i+1 ?></td>
                     <td><code><?= htmlspecialchars($p['codigo']) ?></code></td>
                     <td><?= htmlspecialchars($p['producto_nombre']) ?></td>
                     <td><?= htmlspecialchars($p['unidad']) ?></td>
-                    <td class="text-end"><?= number_format($p['cantidad'],3) ?></td>
-                    <?php if ($traspaso['traspaso_estado'] === 'en_transito' && Auth::tienePermiso('traspasos.confirmar')): ?>
+                    <td class="text-end"><?= number_format($p['enviada'],3) ?></td>
+                    <?php if ($puedeConfirmar): ?>
                     <td class="text-end">
                         <input type="number" name="recibido[<?= $p['producto_id'] ?>]"
                                class="form-control form-control-sm text-end recibido-input"
                                style="width:90px;display:inline-block"
-                               value="<?= $p['cantidad'] ?>" min="0" step="any">
+                               value="<?= $p['enviada'] ?>" min="0" max="<?= $p['enviada'] ?>" step="any">
+                    </td>
+                    <?php elseif ($recibido): ?>
+                    <td class="text-end fw-semibold"><?= number_format((float)$p['recibida'],3) ?></td>
+                    <td class="text-end <?= $faltante ? 'text-danger fw-semibold' : 'text-muted' ?>">
+                        <?= number_format((float)$p['devuelta'],3) ?>
+                        <?php if ($faltante): ?><i class="bi bi-arrow-return-left ms-1" title="Devuelto al origen"></i><?php endif; ?>
                     </td>
                     <?php endif; ?>
                 </tr>
                 <?php endforeach; ?>
                 </tbody>
             </table>
+            <?php if ($recibido && array_filter($partidas, fn($p) => $p['devuelta'] > 0)): ?>
+            <div class="alert alert-warning mb-0 rounded-0 border-0 small">
+                <i class="bi bi-info-circle me-1"></i>
+                Recepción parcial: las cantidades no recibidas se devolvieron automáticamente al stock de la sucursal de origen.
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

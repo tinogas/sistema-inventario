@@ -11,11 +11,20 @@ $totalRegistros = $paginacion['total'];
 
 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
     <h4 class="mb-0"><i class="bi bi-box-seam me-2 text-primary"></i>Productos</h4>
-    <?php if (Auth::tienePermiso('productos.editar')): ?>
-    <a href="<?= $appUrl ?>/?modulo=productos&accion=nuevo" class="btn btn-primary btn-sm">
-        <i class="bi bi-plus-circle me-1"></i>Nuevo producto
-    </a>
-    <?php endif; ?>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="<?= $appUrl ?>/?modulo=productos&accion=exportar_csv<?= $sucursal_id ? '&sucursal_id=' . (int) $sucursal_id : '' ?>"
+           class="btn btn-sm btn-outline-secondary" title="Exportar CSV">
+            <i class="bi bi-filetype-csv me-1"></i>CSV
+        </a>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()" title="Imprimir">
+            <i class="bi bi-printer"></i>
+        </button>
+        <?php if (Auth::tienePermiso('productos.editar')): ?>
+        <a href="<?= $appUrl ?>/?modulo=productos&accion=nuevo" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>Nuevo producto
+        </a>
+        <?php endif; ?>
+    </div>
 </div>
 
 <!-- Buscador -->

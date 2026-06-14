@@ -18,7 +18,7 @@
         <div class="col-md-4">
             <label class="form-label fw-semibold">Sucursal <span class="text-danger">*</span></label>
             <?php if (Auth::esAdmin()): ?>
-            <select name="sucursal_id" class="form-select" required>
+            <select name="sucursal_id" id="selSucursal" class="form-select" required onchange="filtrarMecanicos()">
                 <option value="">— Seleccionar —</option>
                 <?php foreach ($sucursales as $s): ?>
                 <option value="<?= $s['id'] ?>" <?= ($factura['sucursal_id'] ?? Auth::sucursalActual()) == $s['id'] ? 'selected':'' ?>>
@@ -35,29 +35,34 @@
             <input type="text" class="form-control" value="<?= htmlspecialchars($sn->fetchColumn()) ?>" readonly>
             <?php endif; ?>
         </div>
-        <!-- Mecánico -->
+        <!-- Mecánico (se filtra por la sucursal seleccionada) -->
         <div class="col-md-4">
             <label class="form-label fw-semibold">Mecánico</label>
-            <select name="mecanico_id" class="form-select">
+            <select name="mecanico_id" id="selMecanico" class="form-select">
                 <option value="">— Sin mecánico —</option>
                 <?php foreach ($mecanicos as $m): ?>
-                <option value="<?= $m['id'] ?>" <?= ($factura['mecanico_id']??'')==$m['id']?'selected':'' ?>>
+                <option value="<?= $m['id'] ?>" data-sucursal="<?= (int)$m['sucursal_id'] ?>"
+                        <?= ($factura['mecanico_id']??'')==$m['id']?'selected':'' ?>>
                     <?= htmlspecialchars($m['nombre']) ?>
                 </option>
                 <?php endforeach; ?>
             </select>
         </div>
-        <!-- Servicio -->
+        <!-- Servicio: catálogo desplegable (autocompleta la mano de obra) -->
         <div class="col-md-4">
             <label class="form-label fw-semibold">Tipo de servicio</label>
-            <select name="servicio_id" class="form-select">
-                <option value="">— Sin servicio —</option>
+            <select name="servicio_id" id="selServicio" class="form-select">
+                <option value="" data-precio="0" data-nombre="">— Sin servicio —</option>
                 <?php foreach ($servicios as $sv): ?>
-                <option value="<?= $sv['id'] ?>" <?= ($factura['servicio_id']??'')==$sv['id']?'selected':'' ?>>
-                    <?= htmlspecialchars($sv['nombre']) ?>
+                <option value="<?= $sv['id'] ?>"
+                        data-precio="<?= (float)$sv['precio'] ?>"
+                        data-nombre="<?= htmlspecialchars($sv['nombre'], ENT_QUOTES) ?>"
+                        <?= ($factura['servicio_id'] ?? '') == $sv['id'] ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($sv['nombre']) ?><?php if ($sv['precio'] > 0): ?> ($<?= number_format($sv['precio'], 2) ?>)<?php endif; ?>
                 </option>
                 <?php endforeach; ?>
             </select>
+            <div class="form-text">Selecciona un servicio para autocompletar la mano de obra</div>
         </div>
     </div>
 
@@ -173,24 +178,44 @@
         </div>
     </div>
 
-    <!-- Mano de obra y totales -->
+    <!-- Mano de obra, descuento y totales -->
     <div class="row g-3 mb-4">
-        <div class="col-md-6">
+        <div class="col-md-5">
             <label class="form-label fw-semibold">Descripción de mano de obra</label>
-            <input type="text" name="mano_obra_desc" class="form-control" maxlength="200"
+            <input type="text" name="mano_obra_desc" id="inputManoObraDesc" class="form-control" maxlength="200"
                    value="<?= htmlspecialchars($factura['mano_obra_desc'] ?? '') ?>"
                    placeholder="Cambio de muelles delanteros, alineación…">
         </div>
-        <div class="col-md-3">
-            <label class="form-label fw-semibold">Costo mano de obra ($)</label>
-            <input type="number" name="mano_obra" id="inputManoObra" class="form-control"
-                   value="<?= $factura['mano_obra'] ?? 0 ?>" min="0" step="any" onchange="calcularTotales()">
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Mano de obra ($)</label>
+            <input type="number" name="mano_obra" id="inputManoObra" class="form-control text-end"
+                   value="<?= $factura['mano_obra'] ?? 0 ?>" min="0" step="0.01" oninput="calcularTotales()">
+            <div class="form-text">Editable aunque venga del servicio</div>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Descuento</label>
+            <div class="input-group">
+<?php $tieneDesc = (float)($factura['descuento_pct'] ?? 0) > 0; ?>
+                <div class="input-group-text">
+                    <input class="form-check-input mt-0" type="checkbox" id="chkDescuento"
+                           onchange="toggleDescuento(this)" title="Aplicar descuento"
+                           <?= $tieneDesc ? 'checked' : '' ?>>
+                </div>
+                <input type="number" name="descuento_pct" id="inputDescuento" class="form-control text-end"
+                       value="<?= (float)($factura['descuento_pct'] ?? 0) ?>"
+                       min="0" max="100" step="0.1" placeholder="%" <?= $tieneDesc ? '' : 'disabled' ?>
+                       oninput="calcularTotales()">
+                <span class="input-group-text">%</span>
+            </div>
         </div>
         <div class="col-md-3">
             <div class="card bg-light border-0 h-100">
                 <div class="card-body py-2 px-3">
-                    <div class="d-flex justify-content-between small"><span>Subtotal partes:</span><span id="lblSubtotal">$0.00</span></div>
+                    <div class="d-flex justify-content-between small"><span>Partes:</span><span id="lblSubtotal">$0.00</span></div>
                     <div class="d-flex justify-content-between small"><span>Mano de obra:</span><span id="lblManoObra">$0.00</span></div>
+                    <div class="d-flex justify-content-between small text-danger" id="rowDescuento" style="display:none!important">
+                        <span>Descuento (<span id="lblPct">0</span>%):</span><span id="lblDescuento" class="text-danger">−$0.00</span>
+                    </div>
                     <hr class="my-1">
                     <div class="d-flex justify-content-between fw-bold"><span>Total:</span><span id="lblTotal" class="text-warning fs-5">$0.00</span></div>
                 </div>
@@ -215,7 +240,6 @@
 <script>
 const APP_URL = '<?= $appUrl ?>';
 
-// Pre-cargar partidas existentes (modo editar)
 let partidas = <?= isset($detalle) ? json_encode(array_map(fn($d) => [
     'producto_id'    => (int)$d['producto_id'],
     'codigo'         => $d['codigo'],
@@ -224,30 +248,109 @@ let partidas = <?= isset($detalle) ? json_encode(array_map(fn($d) => [
     'precio_unitario'=> (float)$d['precio_unitario'],
 ], $detalle)) : '[]' ?>;
 
-EscanerHandler.iniciar(function(codigo) { buscarProducto(codigo); });
-if (partidas.length) renderTabla();
+let prodActual = null;
 
-function buscarProducto(codigo) {
+// ---- Sucursal ID del FORMULARIO de factura (no del navbar) ----
+// IMPORTANTE: scope a #frmFactura — el navbar de admins tiene otro
+// <select name="sucursal_id"> que aparece antes en el DOM y lo capturaría.
+function getSucursalId() {
+    const form = document.getElementById('frmFactura');
+    const campo = form ? form.querySelector('[name="sucursal_id"]') : null;
+    return campo ? (campo.value || '') : '<?= Auth::sucursalActual() ?? '' ?>';
+}
+
+function apiUrlCodigo(codigo) {
+    const sid = getSucursalId();
+    return APP_URL + '/api/productos_buscar.php?codigo=' + encodeURIComponent(codigo)
+        + (sid ? '&sucursal_id=' + encodeURIComponent(sid) : '');
+}
+
+EscanerHandler.iniciar(function(codigo) { buscarYCargar(codigo); });
+if (partidas.length) renderTabla();
+calcularTotales();  // Inicializa el resumen con mano de obra/descuento ya cargados
+
+// ---- Filtrar mecánicos según la sucursal seleccionada ----
+function filtrarMecanicos() {
+    const sid = getSucursalId();
+    const sel = document.getElementById('selMecanico');
+    if (!sel) return;
+    let seleccionInvalida = false;
+    Array.from(sel.options).forEach(opt => {
+        if (!opt.value) return; // "— Sin mecánico —" siempre visible
+        const suc = opt.getAttribute('data-sucursal');
+        const visible = !sid || suc === String(sid);
+        opt.hidden = !visible;
+        opt.disabled = !visible;
+        if (!visible && opt.selected) seleccionInvalida = true;
+    });
+    // Si el mecánico elegido no pertenece a la sucursal, limpiar la selección
+    if (seleccionInvalida) sel.value = '';
+}
+filtrarMecanicos();  // aplicar al cargar (sucursal inicial / del almacenista)
+
+// ---- Auto-llenar mano de obra al seleccionar servicio del desplegable ----
+document.getElementById('selServicio')?.addEventListener('change', function() {
+    const opt    = this.options[this.selectedIndex];
+    const precio = parseFloat(opt.dataset.precio || 0);
+    // Solo autocompleta el COSTO de la mano de obra (editable). La descripción
+    // la escribe el usuario manualmente — no se rellena con el nombre del servicio.
+    if (precio > 0) {
+        document.getElementById('inputManoObra').value = precio.toFixed(2);
+    }
+    calcularTotales();
+});
+
+// ---- Descuento ----
+function toggleDescuento(chk) {
+    const inp = document.getElementById('inputDescuento');
+    inp.disabled = !chk.checked;
+    if (!chk.checked) inp.value = '0';
+    calcularTotales();
+}
+
+// ---- Cargar producto en campos sin agregar ----
+function cargarProducto(prod) {
+    prodActual = prod;
+    document.getElementById('inputPrecio').value = prod.precio_venta || 0;
+    document.getElementById('inputCantidad').focus();
+    document.getElementById('inputCantidad').select();
+}
+
+function buscarYCargar(codigo) {
     if (!codigo.trim()) return;
-    fetch(APP_URL + '/api/productos_buscar.php?codigo=' + encodeURIComponent(codigo))
+    fetch(apiUrlCodigo(codigo))
         .then(r => r.json())
         .then(data => {
-            if (data.encontrado) {
-                document.getElementById('inputPrecio').value = data.producto.precio_venta || 0;
-                agregarProducto(data.producto);
-            } else mostrarAlerta('Código no encontrado: ' + codigo, 'warning');
+            if (data.encontrado) cargarProducto(data.producto);
+            else mostrarAlerta('Código no encontrado: ' + codigo, 'warning');
         });
 }
 
 function agregarProducto(prod) {
-    const qty   = parseFloat(document.getElementById('inputCantidad').value) || 1;
+    const qty    = parseFloat(document.getElementById('inputCantidad').value) || 1;
     const precio = parseFloat(document.getElementById('inputPrecio').value) || (prod.precio_venta || 0);
+
+    // Validar stock antes de agregar (fix #7)
+    const stockDisp = prod.stock_actual !== null && prod.stock_actual !== undefined
+                      ? parseFloat(prod.stock_actual) : null;
+    if (stockDisp !== null && qty > stockDisp) {
+        mostrarAlerta(
+            `Stock insuficiente para "${prod.nombre}": disponible ${stockDisp}, requerido ${qty}. Ajusta la cantidad.`,
+            'warning'
+        );
+        document.getElementById('inputCantidad').focus();
+        document.getElementById('inputCantidad').select();
+        return;
+    }
+
     const idx = partidas.findIndex(p => p.producto_id == prod.id);
     if (idx >= 0) { partidas[idx].cantidad += qty; }
     else partidas.push({ producto_id: prod.id, codigo: prod.codigo, nombre: prod.nombre, cantidad: qty, precio_unitario: precio });
+    prodActual = null;
     renderTabla();
     document.getElementById('inputEscaner').value  = '';
     document.getElementById('inputCantidad').value = '1';
+    document.getElementById('inputPrecio').value   = '';
     document.getElementById('inputEscaner').focus();
 }
 
@@ -275,12 +378,25 @@ function renderTabla() {
 }
 
 function calcularTotales() {
-    const subtotal  = partidas.reduce((s,p) => s + p.cantidad*p.precio_unitario, 0);
-    const manoObra  = parseFloat(document.getElementById('inputManoObra').value) || 0;
-    const total     = subtotal + manoObra;
+    const subtotal = partidas.reduce((s,p) => s + p.cantidad*p.precio_unitario, 0);
+    const manoObra = parseFloat(document.getElementById('inputManoObra').value) || 0;
+    const chk      = document.getElementById('chkDescuento');
+    const pct      = chk?.checked ? (parseFloat(document.getElementById('inputDescuento').value) || 0) : 0;
+    const bruto    = subtotal + manoObra;
+    const descMonto = bruto * pct / 100;
+    const total    = bruto - descMonto;
+
     document.getElementById('lblSubtotal').textContent = '$'+subtotal.toFixed(2);
     document.getElementById('lblManoObra').textContent = '$'+manoObra.toFixed(2);
-    document.getElementById('lblTotal').textContent    = '$'+total.toFixed(2);
+    const rowDesc = document.getElementById('rowDescuento');
+    if (pct > 0) {
+        rowDesc.style.removeProperty('display');
+        document.getElementById('lblPct').textContent      = pct.toFixed(1);
+        document.getElementById('lblDescuento').textContent = '−$'+descMonto.toFixed(2);
+    } else {
+        rowDesc.style.display = 'none';
+    }
+    document.getElementById('lblTotal').textContent = '$'+total.toFixed(2);
 }
 
 function cambiarCantidad(input) { partidas[parseInt(input.dataset.idx)].cantidad=parseFloat(input.value)||0; renderTabla(); }
@@ -298,22 +414,44 @@ function mostrarAlerta(msg, tipo) {
     document.body.appendChild(div); setTimeout(()=>div.remove(),4000);
 }
 
-document.getElementById('btnAgregar').addEventListener('click', function() { const c=document.getElementById('inputEscaner').value.trim(); if(c) buscarProducto(c); });
-document.getElementById('inputEscaner').addEventListener('keydown', function(e) { if(e.key==='Enter'){e.preventDefault(); if(this.value.trim()) buscarProducto(this.value.trim());} });
+document.getElementById('btnAgregar').addEventListener('click', function() {
+    if (prodActual) agregarProducto(prodActual);
+    else { const c=document.getElementById('inputEscaner').value.trim(); if(c) buscarYCargar(c); }
+});
+document.getElementById('inputEscaner').addEventListener('keydown', function(e) {
+    if(e.key==='Enter'){
+        e.preventDefault();
+        if (prodActual) agregarProducto(prodActual);
+        else if(this.value.trim()) buscarYCargar(this.value.trim());
+    }
+});
 
 let debounce=null;
 document.getElementById('inputEscaner').addEventListener('input', function() {
+    prodActual = null;
     const q=this.value.trim(); clearTimeout(debounce);
     if(q.length<2){document.getElementById('listaSugerencias').style.display='none';return;}
-    debounce=setTimeout(()=>fetch(APP_URL+'/api/productos_buscar.php?q='+encodeURIComponent(q)).then(r=>r.json()).then(d=>{
-        const lista=document.getElementById('listaSugerencias'); lista.innerHTML='';
-        (d.sugerencias||[]).forEach(item=>{
-            const li=document.createElement('li'); li.className='list-group-item list-group-item-action cursor-pointer py-1';
-            li.textContent=`[${item.codigo}] ${item.nombre}`;
-            li.addEventListener('click',()=>{ lista.style.display='none'; document.getElementById('inputEscaner').value=item.codigo; buscarProducto(item.codigo); });
-            lista.appendChild(li);
-        }); lista.style.display=(d.sugerencias||[]).length?'block':'none';
-    }),250);
+    debounce = setTimeout(() => {
+        const sid = getSucursalId();
+        const url = APP_URL + '/api/productos_buscar.php?q=' + encodeURIComponent(q)
+                  + (sid ? '&sucursal_id=' + encodeURIComponent(sid) : '');
+        fetch(url).then(r => r.json()).then(d => {
+            const lista = document.getElementById('listaSugerencias');
+            lista.innerHTML = '';
+            (d.sugerencias || []).forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item list-group-item-action cursor-pointer py-1';
+                li.textContent = `[${item.codigo}] ${item.nombre}`;
+                li.addEventListener('click', () => {
+                    lista.style.display = 'none';
+                    document.getElementById('inputEscaner').value = item.codigo;
+                    buscarYCargar(item.codigo);
+                });
+                lista.appendChild(li);
+            });
+            lista.style.display = (d.sugerencias || []).length ? 'block' : 'none';
+        });
+    }, 250);
 });
 document.addEventListener('click',e=>{ if(!e.target.closest('#sugerenciasWrap')&&!e.target.closest('#inputEscaner')) document.getElementById('listaSugerencias').style.display='none'; });
 document.getElementById('inputManoObra').addEventListener('input', calcularTotales);
