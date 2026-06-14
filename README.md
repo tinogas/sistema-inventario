@@ -154,6 +154,7 @@ Los catálogos incluyen botones de **imprimir** y **exportar a CSV**.
 
 | Documento | Contenido |
 |-----------|-----------|
+| [MANUAL.md](MANUAL.md) | **Manual de usuario** completo, paso a paso, por módulo y rol |
 | [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Patrón MVC, router, controlador/modelo base, transacciones, autenticación, XlsxWriter |
 | [docs/ESQUEMA-BD.md](docs/ESQUEMA-BD.md) | Tablas, columnas, relaciones y folios |
 | [docs/FUNCIONALIDADES.md](docs/FUNCIONALIDADES.md) | Flujos por módulo (entradas, salidas, traspasos, facturas, reportes) |
