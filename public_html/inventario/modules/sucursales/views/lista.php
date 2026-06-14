@@ -30,7 +30,7 @@
                     <tr>
                         <td class="text-muted"><?= htmlspecialchars((string)$s['id']) ?></td>
                         <td>
-                            <img src="<?= !empty($s['foto']) ? $appUrl.'/'.htmlspecialchars($s['foto']) : 'https://placehold.co/56x40?text=Suc' ?>"
+                            <img src="<?= foto_sucursal($s['foto'] ?? null, $appUrl, 112, 80) ?>"
                                  alt="" class="rounded border" style="width:56px;height:40px;object-fit:cover">
                         </td>
                         <td class="fw-semibold"><?= htmlspecialchars($s['nombre']) ?></td>

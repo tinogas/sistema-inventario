@@ -67,12 +67,8 @@
         <!-- Usuario -->
         <div class="dropdown">
             <button class="btn btn-sm btn-outline-light dropdown-toggle d-flex align-items-center gap-2" data-bs-toggle="dropdown">
-                <?php if (!empty($usuario['foto'])): ?>
-                    <img src="<?= $appUrl ?>/<?= htmlspecialchars($usuario['foto']) ?>" alt=""
-                         class="rounded-circle" style="width:26px;height:26px;object-fit:cover">
-                <?php else: ?>
-                    <i class="bi bi-person-circle"></i>
-                <?php endif; ?>
+                <img src="<?= foto_o_avatar($usuario['foto'] ?? null, $usuario['nombre'] ?? '', $appUrl, 52) ?>" alt=""
+                     class="rounded-circle" style="width:26px;height:26px;object-fit:cover">
                 <?= htmlspecialchars($usuario['nombre']) ?>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
@@ -192,7 +188,7 @@
 <script>const APP_URL = '<?= $appUrl ?>';</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="<?= $appUrl ?>/assets/js/app.js"></script>
+<script src="<?= $appUrl ?>/assets/js/app.js?v=2"></script>
 <?php if (isset($scriptExtra)) echo $scriptExtra; ?>
 </body>
 </html>

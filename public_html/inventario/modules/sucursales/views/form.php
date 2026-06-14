@@ -50,11 +50,11 @@
                     <label class="form-label fw-semibold">Foto de la sucursal</label>
                     <div class="text-center mb-2">
                         <img id="previewFoto"
-                             src="<?= $foto ? $appUrl.'/'.htmlspecialchars($foto) : 'https://placehold.co/300x180?text=Sucursal' ?>"
+                             src="<?= foto_sucursal($foto, $appUrl, 300, 180) ?>"
                              alt="Foto sucursal" class="img-fluid rounded border" style="max-height:160px;object-fit:cover">
                     </div>
                     <input type="file" name="foto" class="form-control form-control-sm" accept="image/*"
-                           onchange="if(this.files[0]){document.getElementById('previewFoto').src=URL.createObjectURL(this.files[0]);}">
+                           data-preview="previewFoto">
                     <div class="form-text">JPG, PNG, WEBP o GIF. Máx. 4 MB.</div>
                 </div>
             </div>

@@ -46,7 +46,7 @@
                     <tr>
                         <td class="text-muted small"><?= $m['id'] ?></td>
                         <td>
-                            <img src="<?= !empty($m['foto']) ? $appUrl.'/'.htmlspecialchars($m['foto']) : 'https://ui-avatars.com/api/?name='.urlencode($m['nombre']).'&background=e9ecef&color=555&size=64' ?>"
+                            <img src="<?= foto_o_avatar($m['foto'] ?? null, $m['nombre'], $appUrl, 80) ?>"
                                  alt="" class="rounded-circle border" style="width:40px;height:40px;object-fit:cover">
                         </td>
                         <td class="fw-semibold"><?= htmlspecialchars($m['nombre']) ?></td>

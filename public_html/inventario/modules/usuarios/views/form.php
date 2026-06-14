@@ -33,12 +33,12 @@
             <div class="mb-3 text-center">
                 <?php $fotoActual = $datos['foto'] ?? ($usuario['foto'] ?? null); ?>
                 <img id="previewFoto"
-                     src="<?= $fotoActual ? $appUrl.'/'.htmlspecialchars($fotoActual) : 'https://ui-avatars.com/api/?name='.urlencode($datos['nombre'] ?: 'U').'&background=1a2332&color=fff&size=128' ?>"
+                     src="<?= foto_o_avatar($fotoActual, $datos['nombre'] ?: 'Usuario', $appUrl, 128) ?>"
                      alt="Foto" class="rounded-circle border" style="width:120px;height:120px;object-fit:cover">
                 <div class="mt-2">
                     <label for="foto" class="form-label fw-semibold small">Foto del usuario</label>
                     <input type="file" id="foto" name="foto" class="form-control form-control-sm" accept="image/*"
-                           onchange="if(this.files[0]){document.getElementById('previewFoto').src=URL.createObjectURL(this.files[0]);}">
+                           data-preview="previewFoto">
                     <div class="form-text">JPG, PNG, WEBP o GIF. Máx. 4 MB.</div>
                 </div>
             </div>
