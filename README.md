@@ -132,17 +132,32 @@ Para las **Entradas de compra**, se puede subir el **XML CFDI** del proveedor y 
 
 ## Módulos del sistema
 
-- **Dashboard** — KPIs y alertas de stock
+- **Dashboard** — KPIs, alertas de stock y gráfica de movimientos de los últimos 7 días (entradas, salidas, traspasos y facturas)
+- **Facturas** — Facturación interna de servicios por sucursal: partes + mano de obra (del catálogo de servicios, editable) + descuento; flujo borrador → emitida → pagada
 - **Entradas** — Recepción de mercancía con escáner o importación CFDI
-- **Salidas** — Despacho vinculado a folio Proneg y mecánico
-- **Traspasos** — Movimientos entre sucursales con confirmación
+- **Salidas** — Despacho vinculado a folio Proneg y mecánico, con validación de stock disponible por sucursal
+- **Traspasos** — Movimientos entre sucursales con confirmación y **recepción parcial** (lo no recibido regresa al origen)
 - **Productos** — Catálogo con códigos de barras y stock mínimo
 - **Proveedores** — Directorio de proveedores
 - **Mecánicos** — Personal por sucursal
 - **Servicios** — Tipos de servicio con productos asociados
 - **Categorías / Unidades** — Clasificadores del catálogo
-- **Reportes** — Stock actual, movimientos, kardex, alertas
+- **Reportes** — Stock actual (expandible por sucursal + en tránsito, exportable a XLSX/CSV), movimientos (con filtros), kardex, alertas
+- **Empresa** — Datos de la empresa para impresión de facturas (solo admin)
 - **Usuarios** — Gestión de accesos (solo admin)
+
+Los catálogos incluyen botones de **imprimir** y **exportar a CSV**.
+
+---
+
+## Documentación técnica
+
+| Documento | Contenido |
+|-----------|-----------|
+| [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Patrón MVC, router, controlador/modelo base, transacciones, autenticación, XlsxWriter |
+| [docs/ESQUEMA-BD.md](docs/ESQUEMA-BD.md) | Tablas, columnas, relaciones y folios |
+| [docs/FUNCIONALIDADES.md](docs/FUNCIONALIDADES.md) | Flujos por módulo (entradas, salidas, traspasos, facturas, reportes) |
+| [CHANGELOG.md](CHANGELOG.md) | Historial de mejoras y correcciones |
 
 ---
 
@@ -155,13 +170,6 @@ Para dudas técnicas, revisar primero:
 4. Que la carpeta `uploads/cfdi/` tenga permisos de escritura (chmod 755)
 
 
-## Observaciones ##
-1.- En el Stock Actual, mostrar el stock por medio de producto compreso y expandible por sucursales con el total y que se pueda expandir. 
-2.- Que el archivo a Exportar sea un .Xlsx con tablad dimiacas contraibles por producto/sucursal.
-3.- Agregar Filtros en movimiento por Sucursal, por estado, por producto.
-4.- No funciona el +Agregar Producto cuando editas o das de alta un servicio.
-5.- Cuand pongas un precio, que seleccione el 0.00 para que al escribirlo se borre, de la otra manera, se queda el 0.0  
-6.- Esta fallando el orden para agregar un producto en la entrada. Primero se selecciona o busca el producto, luego la cantidad de compra o entrada, trae el precio unitario y hasta que se le da el boton de +agregar, entonces se agrega a la lista de abajo. Actualmente ejecuta la accion del boton en cuanto encuentra el producto. Lo mismo pasa en la Salida.
-7.- En la salida y factura, que valide la cantidad que hay en stock disponible del producto a agregar en la sucursal seleccionada antes de agregarlo para evitar reiniciar el proceso. O que solo muestre los productos de esa sucursal a la que se esta dando salida o haciendo la factura.
-8.- Cada catalogo tiene que tener su boton de imprimir y exportar a .Xlsx y .CSV.
-9.- Falta el modulo para darle mantenimiento a los datos de la empresa. Nombre, direccion, rfc, ciudad, cp, etc
+## Historial de cambios
+
+Las observaciones y mejoras solicitadas se documentan en [CHANGELOG.md](CHANGELOG.md). Las nueve observaciones iniciales (stock expandible, exportación XLSX, filtros de movimientos, corrección del botón "+Agregar" en servicios, selección automática del precio, orden de captura en entradas/salidas, validación de stock disponible, exportación de catálogos y módulo de empresa) ya están implementadas.
