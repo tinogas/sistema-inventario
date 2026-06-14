@@ -90,9 +90,19 @@ class SalidaController extends Controller
 
         $servicios = $db->query('SELECT id, nombre FROM servicios WHERE activo=1 ORDER BY nombre')->fetchAll();
 
+        // Precarga opcional desde el detalle de un producto (?producto_id=&sucursal_id=)
+        $precargaCodigo   = '';
+        $precargaSucursal = $this->getInt('sucursal_id');
+        $pid = $this->getInt('producto_id');
+        if ($pid > 0) {
+            $st = $db->prepare('SELECT codigo FROM productos WHERE id = ? AND activo = 1');
+            $st->execute([$pid]);
+            $precargaCodigo = (string) ($st->fetchColumn() ?: '');
+        }
+
         $titulo    = 'Nueva salida';
         $vistaPath = BASE_PATH . '/modules/salidas/views/nueva.php';
-        $this->render('salidas/nueva', compact('titulo','sucursales','mecanicos','servicios','vistaPath'));
+        $this->render('salidas/nueva', compact('titulo','sucursales','mecanicos','servicios','vistaPath','precargaCodigo','precargaSucursal'));
     }
 
     public function detalle(): void

@@ -30,6 +30,18 @@ $stockTotal = array_sum(array_column($stockSucursales, 'cantidad'));
         <?= htmlspecialchars($producto['nombre']) ?>
     </h4>
     <div class="d-flex gap-2 flex-wrap">
+        <?php if (Auth::tienePermiso('entradas.crear')): ?>
+        <a href="<?= $appUrl ?>/?modulo=entradas&accion=nueva&producto_id=<?= $producto['id'] ?>"
+           class="btn btn-sm btn-success">
+            <i class="bi bi-box-arrow-in-down-right me-1"></i>Entrada
+        </a>
+        <?php endif; ?>
+        <?php if (Auth::tienePermiso('salidas.crear')): ?>
+        <a href="<?= $appUrl ?>/?modulo=salidas&accion=nueva&producto_id=<?= $producto['id'] ?>"
+           class="btn btn-sm btn-danger">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Salida
+        </a>
+        <?php endif; ?>
         <?php if (Auth::tienePermiso('productos.editar')): ?>
         <a href="<?= $appUrl ?>/?modulo=productos&accion=editar&id=<?= $producto['id'] ?>"
            class="btn btn-sm btn-outline-secondary">
@@ -140,17 +152,23 @@ $stockTotal = array_sum(array_column($stockSucursales, 'cantidad'));
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-sm align-middle mb-0">
+                <?php
+                    $puedeEntrada = Auth::tienePermiso('entradas.crear');
+                    $puedeSalida  = Auth::tienePermiso('salidas.crear');
+                    $colAcciones  = $puedeEntrada || $puedeSalida;
+                ?>
                 <thead class="table-light">
                     <tr>
                         <th>Sucursal</th>
                         <th class="text-end">Cantidad</th>
                         <th class="text-center">Estado</th>
+                        <?php if ($colAcciones): ?><th class="text-center">Movimiento</th><?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
                 <?php if (empty($stockSucursales)): ?>
                     <tr>
-                        <td colspan="3" class="text-center text-muted py-3">Sin sucursales activas.</td>
+                        <td colspan="<?= $colAcciones ? 4 : 3 ?>" class="text-center text-muted py-3">Sin sucursales activas.</td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($stockSucursales as $ss):
@@ -175,6 +193,22 @@ $stockTotal = array_sum(array_column($stockSucursales, 'cantidad'));
                                 </span>
                             <?php endif; ?>
                         </td>
+                        <?php if ($colAcciones): ?>
+                        <td class="text-center text-nowrap">
+                            <?php if ($puedeEntrada): ?>
+                            <a href="<?= $appUrl ?>/?modulo=entradas&accion=nueva&producto_id=<?= $producto['id'] ?>&sucursal_id=<?= $ss['sucursal_id'] ?>"
+                               class="btn btn-sm btn-success py-0 px-2" title="Dar entrada en <?= htmlspecialchars($ss['sucursal_nombre'], ENT_QUOTES) ?>">
+                                <i class="bi bi-box-arrow-in-down-right"></i> Entrada
+                            </a>
+                            <?php endif; ?>
+                            <?php if ($puedeSalida): ?>
+                            <a href="<?= $appUrl ?>/?modulo=salidas&accion=nueva&producto_id=<?= $producto['id'] ?>&sucursal_id=<?= $ss['sucursal_id'] ?>"
+                               class="btn btn-sm btn-danger py-0 px-2 ms-1" title="Dar salida en <?= htmlspecialchars($ss['sucursal_nombre'], ENT_QUOTES) ?>">
+                                <i class="bi bi-box-arrow-up-right"></i> Salida
+                            </a>
+                            <?php endif; ?>
+                        </td>
+                        <?php endif; ?>
                     </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -185,6 +219,7 @@ $stockTotal = array_sum(array_column($stockSucursales, 'cantidad'));
                         <td>Total</td>
                         <td class="text-end"><?= number_format($stockTotal, 3) ?></td>
                         <td></td>
+                        <?php if ($colAcciones): ?><td></td><?php endif; ?>
                     </tr>
                 </tfoot>
                 <?php endif; ?>

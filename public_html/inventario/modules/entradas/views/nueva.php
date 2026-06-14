@@ -16,7 +16,7 @@
             <select name="sucursal_id" class="form-select" required>
                 <option value="">— Seleccionar —</option>
                 <?php foreach ($sucursales as $s): ?>
-                <option value="<?= $s['id'] ?>"><?= htmlspecialchars($s['nombre']) ?></option>
+                <option value="<?= $s['id'] ?>" <?= (!empty($precargaSucursal) && (int)$precargaSucursal === (int)$s['id']) ? 'selected' : '' ?>><?= htmlspecialchars($s['nombre']) ?></option>
                 <?php endforeach; ?>
             </select>
             <?php else: ?>
@@ -158,6 +158,13 @@ let prodActual = null;  // producto cargado en los campos, pendiente de agregar
 EscanerHandler.iniciar(function (codigo) {
     buscarYAgregar(codigo);
 });
+
+// Precarga desde el detalle de un producto: carga el producto en los campos
+<?php if (!empty($precargaCodigo)): ?>
+window.addEventListener('DOMContentLoaded', function () {
+    buscarYCargar(<?= json_encode($precargaCodigo) ?>);
+});
+<?php endif; ?>
 
 // ---- Cargar producto en campos sin agregar a tabla (autocomplete / búsqueda manual) ----
 function cargarProducto(prod) {
