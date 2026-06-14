@@ -144,9 +144,15 @@ Para las **Entradas de compra**, se puede subir el **XML CFDI** del proveedor y 
 - **Categorías / Unidades** — Clasificadores del catálogo
 - **Reportes** — Stock actual (expandible por sucursal + en tránsito, exportable a XLSX/CSV), movimientos (con filtros), kardex, alertas
 - **Empresa** — Datos de la empresa para impresión de facturas (solo admin)
-- **Usuarios** — Gestión de accesos (solo admin)
+- **Usuarios** — Gestión de accesos con foto (solo admin)
+- **Respaldos BD** — Genera y descarga respaldos `.sql` con historial (solo admin)
+- **Base de datos** — Carga datos de ejemplo (demo) o vacía la base para empezar de cero (solo admin)
 
-Los catálogos incluyen botones de **imprimir** y **exportar a CSV**.
+Notas:
+- **Fotos**: usuarios, mecánicos y sucursales admiten foto; si no hay, se muestra un avatar de iniciales. La sucursal incluye **mapa de ubicación**.
+- Desde la **ficha del producto** se puede dar Entrada/Salida por sucursal viendo el stock y el mínimo.
+- En **Alertas** se genera un **pedido de reabastecimiento** imprimible (con datos de empresa) y exportable a XLSX.
+- Los catálogos incluyen botones de **imprimir** y **exportar a CSV**.
 
 ---
 

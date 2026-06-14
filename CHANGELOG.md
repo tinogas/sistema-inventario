@@ -2,7 +2,23 @@
 
 Todas las mejoras y correcciones relevantes del sistema.
 
-## [No publicado] — 2026-06
+## 2026-06 — Fotos, mantenimiento de BD y mejoras de operación
+
+### Nuevas funcionalidades
+- **Fotos**: usuarios (incl. administradores), mecánicos y sucursales. Avatar de iniciales local (SVG) cuando no hay foto; la foto del usuario aparece en el navbar. Vista previa instantánea al seleccionar el archivo.
+- **Sucursales**: foto y **ubicación en mapa** (latitud/longitud) con mapa embebido (OpenStreetMap) y enlace a Google Maps.
+- **Ficha de producto**: botones de **Entrada/Salida por sucursal** (con producto precargado y sucursal preseleccionada), columna **Stock mínimo**, y **Salida deshabilitada** si la sucursal tiene 0 existencias.
+- **Pedido de reabastecimiento** (desde Alertas): documento imprimible con encabezado de datos de la empresa, proveedor y cantidad a pedir; exportable a **Excel .xlsx**.
+- **Módulo Respaldos (Backups)**: genera respaldos `.sql` completos en PHP puro, con historial/log, descarga protegida y eliminación.
+- **Módulo Base de datos**: guardar un **seed de ejemplo** con los datos actuales, **cargarlo** (para presentaciones) y **vaciar** la base para empezar de cero (conserva admin y catálogos base).
+
+### Correcciones
+- Foto del admin aparecía en usuarios sin foto al editar: `render()` reescribe `$usuario` con el usuario logueado; el formulario ahora usa solo `$datos['foto']`.
+- Cabeceras **anti-caché** en páginas dinámicas.
+
+---
+
+## 2026-06 — Auditoría, correcciones de inventario y funcionalidades base
 
 Ronda de auditoría, correcciones de inventario y nuevas funcionalidades.
 
