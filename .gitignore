@@ -29,3 +29,7 @@ vendor/
 
 # Herramientas de instalación local
 tools/
+
+# Fotos subidas (conservar carpeta, ignorar contenido)
+public_html/inventario/uploads/fotos/*
+!public_html/inventario/uploads/fotos/.gitkeep

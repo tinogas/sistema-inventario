@@ -1,5 +1,6 @@
 <?php
 require_once BASE_PATH . '/core/Controller.php';
+require_once BASE_PATH . '/core/Upload.php';
 require_once BASE_PATH . '/modules/mecanicos/MecanicoModel.php';
 
 class MecanicoController extends Controller
@@ -73,7 +74,7 @@ class MecanicoController extends Controller
 
         $sucursales = $this->model->getSucursales();
         $errores    = [];
-        $datos      = ['nombre' => '', 'sucursal_id' => '', 'telefono' => ''];
+        $datos      = ['nombre' => '', 'sucursal_id' => '', 'telefono' => '', 'foto' => null];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->validarCsrf();
@@ -87,6 +88,11 @@ class MecanicoController extends Controller
             }
             if ($datos['sucursal_id'] <= 0) {
                 $errores[] = 'Debes seleccionar una sucursal.';
+            }
+            try {
+                $datos['foto'] = Upload::imagen('foto', 'mecanico');
+            } catch (RuntimeException $e) {
+                $errores[] = $e->getMessage();
             }
 
             if (empty($errores)) {
@@ -123,6 +129,7 @@ class MecanicoController extends Controller
             'nombre'      => $mecanico['nombre'],
             'sucursal_id' => $mecanico['sucursal_id'],
             'telefono'    => $mecanico['telefono'] ?? '',
+            'foto'        => $mecanico['foto'] ?? null,
         ];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -137,6 +144,11 @@ class MecanicoController extends Controller
             }
             if ($datos['sucursal_id'] <= 0) {
                 $errores[] = 'Debes seleccionar una sucursal.';
+            }
+            try {
+                $datos['foto'] = Upload::imagen('foto', 'mecanico', $mecanico['foto'] ?? null);
+            } catch (RuntimeException $e) {
+                $errores[] = $e->getMessage();
             }
 
             if (empty($errores)) {

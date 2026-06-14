@@ -5,7 +5,7 @@ class Auth
     {
         $db = Database::getInstance();
         $stmt = $db->prepare(
-            'SELECT id, nombre, email, password_hash, rol, sucursal_id
+            'SELECT id, nombre, email, password_hash, rol, sucursal_id, foto
              FROM usuarios
              WHERE email = :email AND activo = 1
              LIMIT 1'
@@ -28,6 +28,7 @@ class Auth
         Session::set('usuario_email',        $usuario['email']);
         Session::set('usuario_rol',          $usuario['rol']);
         Session::set('usuario_sucursal_id',  $usuario['sucursal_id']);
+        Session::set('usuario_foto',         $usuario['foto'] ?? null);
 
         // Si es almacenista sin sucursal asignada, usar sucursal 1 por defecto
         if ($usuario['rol'] !== ROL_ADMIN && empty($usuario['sucursal_id'])) {
@@ -55,6 +56,7 @@ class Auth
             'email'       => Session::get('usuario_email'),
             'rol'         => Session::get('usuario_rol'),
             'sucursal_id' => Session::get('usuario_sucursal_id'),
+            'foto'        => Session::get('usuario_foto'),
         ];
     }
 

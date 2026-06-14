@@ -12,25 +12,41 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th>Foto</th>
                         <th>Nombre</th>
                         <th>Ciudad</th>
                         <th>Dirección</th>
                         <th>Teléfono</th>
+                        <th class="text-center">Mapa</th>
                         <th class="text-center">Activa</th>
                         <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                 <?php if (empty($sucursales)): ?>
-                    <tr><td colspan="7" class="text-center text-muted py-4">No hay sucursales registradas</td></tr>
+                    <tr><td colspan="9" class="text-center text-muted py-4">No hay sucursales registradas</td></tr>
                 <?php else: ?>
                     <?php foreach ($sucursales as $s): ?>
                     <tr>
                         <td class="text-muted"><?= htmlspecialchars((string)$s['id']) ?></td>
+                        <td>
+                            <img src="<?= !empty($s['foto']) ? $appUrl.'/'.htmlspecialchars($s['foto']) : 'https://placehold.co/56x40?text=Suc' ?>"
+                                 alt="" class="rounded border" style="width:56px;height:40px;object-fit:cover">
+                        </td>
                         <td class="fw-semibold"><?= htmlspecialchars($s['nombre']) ?></td>
                         <td><?= htmlspecialchars($s['ciudad']) ?></td>
                         <td><?= htmlspecialchars($s['direccion'] ?: '—') ?></td>
                         <td><?= htmlspecialchars($s['telefono'] ?: '—') ?></td>
+                        <td class="text-center">
+                            <?php if (!empty($s['latitud']) && !empty($s['longitud'])): ?>
+                                <a href="https://www.google.com/maps?q=<?= $s['latitud'] ?>,<?= $s['longitud'] ?>"
+                                   target="_blank" rel="noopener" class="btn btn-sm btn-outline-danger" title="Ver ubicación">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                </a>
+                            <?php else: ?>
+                                <span class="text-muted">—</span>
+                            <?php endif; ?>
+                        </td>
                         <td class="text-center">
                             <?php if ($s['activa']): ?>
                                 <span class="badge bg-success">Activa</span>

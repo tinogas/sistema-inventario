@@ -66,8 +66,13 @@
 
         <!-- Usuario -->
         <div class="dropdown">
-            <button class="btn btn-sm btn-outline-light dropdown-toggle" data-bs-toggle="dropdown">
-                <i class="bi bi-person-circle me-1"></i>
+            <button class="btn btn-sm btn-outline-light dropdown-toggle d-flex align-items-center gap-2" data-bs-toggle="dropdown">
+                <?php if (!empty($usuario['foto'])): ?>
+                    <img src="<?= $appUrl ?>/<?= htmlspecialchars($usuario['foto']) ?>" alt=""
+                         class="rounded-circle" style="width:26px;height:26px;object-fit:cover">
+                <?php else: ?>
+                    <i class="bi bi-person-circle"></i>
+                <?php endif; ?>
                 <?= htmlspecialchars($usuario['nombre']) ?>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
