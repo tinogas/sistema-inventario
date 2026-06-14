@@ -166,6 +166,42 @@ class ReporteModel extends Model
         );
     }
 
+    /**
+     * Productos bajo mínimo para generar el pedido de reabastecimiento.
+     * Incluye proveedor y la cantidad sugerida a pedir (mínimo − actual).
+     */
+    public function getReabastecimiento(?int $sucursal_id): array
+    {
+        $where  = 'WHERE p.activo = 1 AND ss.cantidad <= p.stock_minimo';
+        $params = [];
+        if ($sucursal_id) {
+            $where .= ' AND ss.sucursal_id = :sid';
+            $params[':sid'] = $sucursal_id;
+        }
+
+        return $this->fetchAll(
+            "SELECT p.id, p.codigo, p.nombre,
+                    COALESCE(c.nombre,'—')  AS categoria,
+                    COALESCE(u.clave,'PZA') AS unidad,
+                    COALESCE(pv.razon_social,'—') AS proveedor,
+                    su.id   AS sucursal_id,
+                    su.nombre AS sucursal,
+                    ss.cantidad      AS stock_actual,
+                    p.stock_minimo,
+                    GREATEST(p.stock_minimo - ss.cantidad, 0) AS a_pedir,
+                    p.precio_costo
+             FROM stock_sucursal ss
+             INNER JOIN productos p   ON p.id  = ss.producto_id
+             INNER JOIN sucursales su ON su.id = ss.sucursal_id
+             LEFT  JOIN categorias c  ON c.id  = p.categoria_id
+             LEFT  JOIN unidades   u  ON u.id  = p.unidad_id
+             LEFT  JOIN proveedores pv ON pv.id = p.proveedor_id
+             {$where}
+             ORDER BY pv.razon_social, su.nombre, p.nombre",
+            $params
+        );
+    }
+
     public function getKardex(int $producto_id, ?int $sucursal_id, string $desde, string $hasta): array
     {
         $where  = "WHERE d.producto_id = :pid AND m.created_at BETWEEN :desde AND :hasta AND m.estado = 'confirmado'";

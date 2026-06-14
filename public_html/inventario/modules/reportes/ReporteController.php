@@ -2,6 +2,7 @@
 require_once BASE_PATH . '/core/Controller.php';
 require_once BASE_PATH . '/core/XlsxWriter.php';
 require_once BASE_PATH . '/modules/reportes/ReporteModel.php';
+require_once BASE_PATH . '/modules/empresa/EmpresaModel.php';
 
 class ReporteController extends Controller
 {
@@ -75,6 +76,69 @@ class ReporteController extends Controller
         $titulo    = 'Alertas: Stock bajo mínimo';
         $vistaPath = BASE_PATH . '/modules/reportes/views/alertas.php';
         $this->render('reportes/alertas', compact('titulo','datos','vistaPath'));
+    }
+
+    /**
+     * Pedido de reabastecimiento: productos bajo mínimo con cantidad a pedir,
+     * encabezado con datos de la empresa. Imprimible o exportable a XLSX.
+     */
+    public function pedido(): void
+    {
+        $this->requirePermiso('reportes.ver');
+
+        $sucursal_id = Auth::sucursalFiltro();
+        $datos       = $this->model->getReabastecimiento($sucursal_id);
+        $empresa     = (new EmpresaModel())->get();
+
+        if (isset($_GET['xlsx'])) {
+            $this->exportarPedidoXlsx($datos, $empresa);
+        }
+
+        // Página limpia para imprimir (sin layout)
+        $appUrl = APP_URL;
+        $this->renderSinLayout(
+            BASE_PATH . '/modules/reportes/views/pedido.php',
+            compact('datos', 'empresa', 'appUrl', 'sucursal_id')
+        );
+    }
+
+    private function exportarPedidoXlsx(array $datos, array $empresa): void
+    {
+        $xlsx = new XlsxWriter();
+        $xlsx->addSheet('Pedido');
+
+        // Encabezado con datos de la empresa
+        $xlsx->writeRow([$empresa['nombre'] ?? 'Empresa'], 0, false, true);
+        $infoEmpresa = array_filter([
+            $empresa['rfc']       ? 'RFC: ' . $empresa['rfc'] : '',
+            $empresa['direccion'] ?? '',
+            trim(($empresa['ciudad'] ?? '') . ' ' . ($empresa['cp'] ? 'C.P. ' . $empresa['cp'] : '')),
+            $empresa['telefono']  ? 'Tel: ' . $empresa['telefono'] : '',
+            $empresa['email']     ?? '',
+        ]);
+        foreach ($infoEmpresa as $linea) {
+            if (trim($linea) !== '') {
+                $xlsx->writeRow([$linea]);
+            }
+        }
+        $xlsx->writeRow(['']);
+        $xlsx->writeRow(['PEDIDO DE REABASTECIMIENTO — ' . date('d/m/Y H:i')], 0, false, true);
+        $xlsx->writeRow(['']);
+
+        $xlsx->writeHeader(['Código', 'Producto', 'Categoría', 'Proveedor', 'Sucursal', 'Unidad', 'Stock actual', 'Mínimo', 'A pedir', 'Costo unit.', 'Importe est.']);
+        $totalImporte = 0.0;
+        foreach ($datos as $d) {
+            $importe = (float) $d['a_pedir'] * (float) $d['precio_costo'];
+            $totalImporte += $importe;
+            $xlsx->writeRow([
+                $d['codigo'], $d['nombre'], $d['categoria'], $d['proveedor'], $d['sucursal'], $d['unidad'],
+                (float) $d['stock_actual'], (float) $d['stock_minimo'], (float) $d['a_pedir'],
+                (float) $d['precio_costo'], round($importe, 2),
+            ]);
+        }
+        $xlsx->writeRow(['', '', '', '', '', '', '', '', '', 'TOTAL', round($totalImporte, 2)], 0, false, true);
+
+        $xlsx->download('pedido_reabastecimiento_' . date('Ymd_His') . '.xlsx');
     }
 
     public function kardex(): void

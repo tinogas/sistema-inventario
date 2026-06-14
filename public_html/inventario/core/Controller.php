@@ -38,6 +38,7 @@ class Controller
 
     protected function render(string $vista, array $datos = []): void
     {
+        $this->noCache();
         // Derivar vistaPath automáticamente: "modulo/nombre" → modules/modulo/views/nombre.php
         $partes    = explode('/', $vista);
         $vistaPath = count($partes) === 2
@@ -59,8 +60,23 @@ class Controller
 
     protected function renderSinLayout(string $archivo, array $datos = []): void
     {
+        $this->noCache();
         extract($datos);
         require_once $archivo;
+    }
+
+    /**
+     * Evita que el navegador cachee páginas dinámicas (formularios, listados).
+     * Sin esto, al editar un usuario sin foto podía verse la foto de otro
+     * por una página HTML cacheada.
+     */
+    protected function noCache(): void
+    {
+        if (!headers_sent()) {
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+        }
     }
 
     protected function json(mixed $data, int $code = 200): void
