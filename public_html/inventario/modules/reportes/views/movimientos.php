@@ -50,12 +50,12 @@
                 <?php foreach ($resultado['filas'] as $m): ?>
                 <tr>
                     <td><code><?= htmlspecialchars($m['folio']) ?></code></td>
-                    <td><?= ucfirst(str_replace('_',' ', $m['tipo'])) ?></td>
+                    <td><?= htmlspecialchars(ucfirst(str_replace('_',' ', $m['tipo']))) ?></td>
                     <td><?= htmlspecialchars($m['sucursal']) ?></td>
                     <td><?= htmlspecialchars($m['referencia_factura'] ?: '—') ?></td>
-                    <td class="text-center"><span class="badge bg-secondary"><?= $m['num_partidas'] ?></span></td>
+                    <td class="text-center"><span class="badge bg-secondary"><?= (int)$m['num_partidas'] ?></span></td>
                     <td class="text-muted small"><?= date('d/m/Y H:i', strtotime($m['created_at'])) ?></td>
-                    <td><span class="badge badge-estado-<?= $m['estado'] ?>"><?= ucfirst($m['estado']) ?></span></td>
+                    <td><span class="badge badge-estado-<?= htmlspecialchars($m['estado']) ?>"><?= htmlspecialchars(ucfirst($m['estado'])) ?></span></td>
                     <td>
                         <?php
                         $modDestino = match($m['tipo']) {

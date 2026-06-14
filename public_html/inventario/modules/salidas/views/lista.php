@@ -50,7 +50,7 @@
                         <td class="text-center"><span class="badge bg-secondary"><?= $s['num_partidas'] ?></span></td>
                         <td class="text-muted small"><?= date('d/m/Y H:i', strtotime($s['created_at'])) ?></td>
                         <td>
-                            <span class="badge badge-estado-<?= $s['estado'] ?>">
+                            <span class="badge badge-estado-<?= htmlspecialchars($s['estado'], ENT_QUOTES, 'UTF-8') ?>">
                                 <?= ucfirst($s['estado']) ?>
                             </span>
                         </td>

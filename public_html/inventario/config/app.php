@@ -44,6 +44,7 @@ define('PERMISOS', [
         'entradas.ver', 'entradas.crear',
         'salidas.ver', 'salidas.crear',
         'traspasos.ver', 'traspasos.crear', 'traspasos.confirmar',
+        'facturas.ver', 'facturas.crear', 'facturas.emitir',
         'reportes.ver',
     ],
     ROL_CONSULTA => [

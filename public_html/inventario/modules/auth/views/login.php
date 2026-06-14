@@ -33,6 +33,7 @@
             <?php endif; ?>
 
             <form method="POST" action="<?= APP_URL ?>/?modulo=auth&accion=login">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars(Session::getCsrfToken()) ?>">
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Correo electrónico</label>
                     <div class="input-group">

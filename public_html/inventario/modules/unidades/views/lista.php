@@ -32,12 +32,12 @@
                     <?php else: ?>
                     <?php foreach ($unidades as $uni): ?>
                     <tr>
-                        <td class="text-muted small"><?= $uni['id'] ?></td>
+                        <td class="text-muted small"><?= htmlspecialchars((string)$uni['id']) ?></td>
                         <td><span class="badge bg-secondary fs-6"><?= htmlspecialchars($uni['clave']) ?></span></td>
                         <td class="fw-semibold"><?= htmlspecialchars($uni['nombre']) ?></td>
                         <?php if (Auth::esAdmin()): ?>
                         <td class="text-center">
-                            <a href="<?= $appUrl ?>/?modulo=unidades&accion=editar&id=<?= $uni['id'] ?>"
+                            <a href="<?= $appUrl ?>/?modulo=unidades&accion=editar&id=<?= htmlspecialchars((string)$uni['id']) ?>"
                                class="btn btn-sm btn-outline-primary me-1" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </a>
@@ -46,7 +46,7 @@
                                     title="Eliminar"
                                     data-bs-toggle="modal"
                                     data-bs-target="#modalEliminar"
-                                    data-id="<?= $uni['id'] ?>"
+                                    data-id="<?= htmlspecialchars((string)$uni['id']) ?>"
                                     data-nombre="<?= htmlspecialchars($uni['clave'] . ' — ' . $uni['nombre']) ?>">
                                 <i class="bi bi-trash"></i>
                             </button>

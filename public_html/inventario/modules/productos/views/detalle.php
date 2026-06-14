@@ -237,8 +237,8 @@ $stockTotal = array_sum(array_column($stockSucursales, 'cantidad'));
                             </span>
                         </td>
                         <td>
-                            <span class="badge <?= $tipo['clase'] ?> small">
-                                <?= $tipo['texto'] ?>
+                            <span class="badge <?= htmlspecialchars($tipo['clase']) ?> small">
+                                <?= htmlspecialchars($tipo['texto']) ?>
                             </span>
                         </td>
                         <td class="text-end fw-semibold">
@@ -257,8 +257,8 @@ $stockTotal = array_sum(array_column($stockSucursales, 'cantidad'));
                         </td>
                         <td class="small"><?= htmlspecialchars($mov['usuario']) ?></td>
                         <td class="text-center">
-                            <span class="badge <?= $estado['clase'] ?> small">
-                                <?= $estado['texto'] ?>
+                            <span class="badge <?= htmlspecialchars($estado['clase']) ?> small">
+                                <?= htmlspecialchars($estado['texto']) ?>
                             </span>
                         </td>
                     </tr>

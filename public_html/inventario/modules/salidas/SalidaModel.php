@@ -69,13 +69,13 @@ class SalidaModel extends Model
      * Verifica si hay stock suficiente para cada partida.
      * Devuelve array de problemas; vacío si todo OK.
      */
-    public function verificarStock(int $sucursal_id, array $partidas): array
+    public function verificarStockLocked(int $sucursal_id, array $partidas): array
     {
         $problemas = [];
         foreach ($partidas as $p) {
             $stock = (float) $this->fetchColumn(
                 "SELECT COALESCE(cantidad, 0) FROM stock_sucursal
-                 WHERE producto_id = :pid AND sucursal_id = :sid",
+                 WHERE producto_id = :pid AND sucursal_id = :sid FOR UPDATE",
                 [':pid' => $p['producto_id'], ':sid' => $sucursal_id]
             );
             if ($stock < $p['cantidad']) {
@@ -90,6 +90,38 @@ class SalidaModel extends Model
     }
 
     /**
+     * Cancela una salida confirmada y revierte el stock.
+     */
+    public function cancelarMovimiento(int $id, int $sucursal_id): void
+    {
+        $partidas = $this->getDetalle($id);
+        if (empty($partidas)) {
+            throw new RuntimeException('No se encontraron partidas para esta salida.');
+        }
+
+        $this->beginTransaction();
+        try {
+            $this->execute(
+                "UPDATE movimientos SET estado = 'cancelado' WHERE id = :id AND tipo = 'salida'",
+                [':id' => $id]
+            );
+
+            foreach ($partidas as $p) {
+                $this->execute(
+                    "UPDATE stock_sucursal SET cantidad = cantidad + :qty
+                     WHERE producto_id = :pid AND sucursal_id = :sid",
+                    [':qty' => $p['cantidad'], ':pid' => $p['producto_id'], ':sid' => $sucursal_id]
+                );
+            }
+
+            $this->commit();
+        } catch (Exception $e) {
+            $this->rollback();
+            throw $e;
+        }
+    }
+
+    /**
      * Confirma la salida. Si $forzar=true descuenta aunque el stock quede negativo.
      */
     public function confirmar(array $datos, array $partidas, bool $forzar = false): int
@@ -98,15 +130,15 @@ class SalidaModel extends Model
             throw new RuntimeException('La salida debe tener al menos una partida.');
         }
 
+        $this->beginTransaction();
+        try {
         if (!$forzar) {
-            $problemas = $this->verificarStock($datos['sucursal_id'], $partidas);
+            $problemas = $this->verificarStockLocked($datos['sucursal_id'], $partidas);
             if ($problemas) {
+                $this->rollback();
                 throw new RuntimeException(implode(' | ', $problemas));
             }
         }
-
-        $this->beginTransaction();
-        try {
             $folio = $this->generarFolio(MOV_SALIDA);
 
             $this->execute(

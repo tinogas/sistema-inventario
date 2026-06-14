@@ -38,12 +38,21 @@ class Controller
 
     protected function render(string $vista, array $datos = []): void
     {
+        // Derivar vistaPath automáticamente: "modulo/nombre" → modules/modulo/views/nombre.php
+        $partes    = explode('/', $vista);
+        $vistaPath = count($partes) === 2
+            ? BASE_PATH . '/modules/' . $partes[0] . '/views/' . $partes[1] . '.php'
+            : BASE_PATH . '/modules/' . $vista . '.php';
+
+        // Eliminar claves reservadas del layout antes de extraer para evitar colisiones
+        unset($datos['flash'], $datos['usuario'], $datos['csrf'], $datos['appName'], $datos['appUrl']);
         extract($datos);
-        $flash    = Session::getFlash();
-        $usuario  = Auth::usuario();
-        $csrf     = Session::getCsrfToken();
-        $appName  = APP_NAME;
-        $appUrl   = APP_URL;
+
+        $flash   = Session::getFlash();
+        $usuario = Auth::usuario();
+        $csrf    = Session::getCsrfToken();
+        $appName = APP_NAME;
+        $appUrl  = APP_URL;
 
         require_once BASE_PATH . '/shared/views/layout.php';
     }
@@ -70,7 +79,11 @@ class Controller
 
     protected function redirectBack(): void
     {
-        $ref = $_SERVER['HTTP_REFERER'] ?? (APP_URL . '/?modulo=dashboard');
+        $ref = $_SERVER['HTTP_REFERER'] ?? '';
+        // Solo permitir Referers internos para evitar open redirect
+        if (empty($ref) || strpos($ref, APP_URL) === false) {
+            $ref = APP_URL . '/?modulo=dashboard';
+        }
         header('Location: ' . $ref);
         exit;
     }

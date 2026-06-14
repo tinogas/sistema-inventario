@@ -75,6 +75,8 @@ class EntradaModel extends Model
 
         $this->beginTransaction();
         try {
+            // Generar folio dentro de la transacción para reducir la ventana de race condition
+            $this->execute('SELECT GET_LOCK(:lk, 5)', [':lk' => 'folio_entrada']);
             $folio = $this->generarFolio(MOV_ENTRADA);
 
             // Insertar cabecera
@@ -121,10 +123,12 @@ class EntradaModel extends Model
                 );
             }
 
+            $this->execute('SELECT RELEASE_LOCK(:lk)', [':lk' => 'folio_entrada']);
             $this->commit();
             return $movId;
 
         } catch (Exception $e) {
+            $this->execute('SELECT RELEASE_LOCK(:lk)', [':lk' => 'folio_entrada']);
             $this->rollback();
             throw $e;
         }
@@ -135,6 +139,7 @@ class EntradaModel extends Model
         $mov = $this->getById($id);
         if (!$mov) throw new RuntimeException('Entrada no encontrada.');
         if ($mov['estado'] === 'cancelado') throw new RuntimeException('Ya está cancelada.');
+        if ($mov['estado'] !== 'confirmado') throw new RuntimeException('Solo se pueden cancelar entradas en estado confirmado.');
 
         $partidas = $this->getDetalle($id);
 
@@ -147,11 +152,16 @@ class EntradaModel extends Model
 
             // Revertir stock
             foreach ($partidas as $p) {
-                $this->execute(
+                $afectadas = $this->execute(
                     "UPDATE stock_sucursal SET cantidad = cantidad - :qty
-                     WHERE producto_id = :pid AND sucursal_id = :sid",
-                    [':qty' => $p['cantidad'], ':pid' => $p['producto_id'], ':sid' => $mov['sucursal_id']]
+                     WHERE producto_id = :pid AND sucursal_id = :sid AND cantidad >= :qty2",
+                    [':qty' => $p['cantidad'], ':qty2' => $p['cantidad'], ':pid' => $p['producto_id'], ':sid' => $mov['sucursal_id']]
                 );
+                if ($afectadas === 0) {
+                    throw new RuntimeException(
+                        'Stock insuficiente para revertir el producto ID ' . $p['producto_id'] . '. Cancele manualmente con ajuste de inventario.'
+                    );
+                }
             }
 
             $this->commit();

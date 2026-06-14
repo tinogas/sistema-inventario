@@ -33,7 +33,7 @@
                     <?php else: ?>
                     <?php foreach ($categorias as $cat): ?>
                     <tr>
-                        <td class="text-muted small"><?= $cat['id'] ?></td>
+                        <td class="text-muted small"><?= htmlspecialchars((string)$cat['id']) ?></td>
                         <td class="fw-semibold"><?= htmlspecialchars($cat['nombre']) ?></td>
                         <td class="text-muted"><?= htmlspecialchars($cat['descripcion'] ?? '—') ?></td>
                         <td class="text-center">
@@ -45,7 +45,7 @@
                         </td>
                         <?php if (Auth::esAdmin()): ?>
                         <td class="text-center">
-                            <a href="<?= $appUrl ?>/?modulo=categorias&accion=editar&id=<?= $cat['id'] ?>"
+                            <a href="<?= $appUrl ?>/?modulo=categorias&accion=editar&id=<?= htmlspecialchars((string)$cat['id']) ?>"
                                class="btn btn-sm btn-outline-primary me-1" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </a>

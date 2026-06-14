@@ -50,7 +50,7 @@
                             <?= $t['fecha_recepcion'] ? date('d/m/Y H:i', strtotime($t['fecha_recepcion'])) : '—' ?>
                         </td>
                         <td>
-                            <span class="badge badge-estado-<?= $t['traspaso_estado'] ?>">
+                            <span class="badge badge-estado-<?= htmlspecialchars($t['traspaso_estado']) ?>">
                                 <?= ucwords(str_replace('_',' ', $t['traspaso_estado'])) ?>
                             </span>
                         </td>

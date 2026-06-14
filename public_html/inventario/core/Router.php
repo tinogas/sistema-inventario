@@ -15,6 +15,8 @@ class Router
         'traspasos'  => ['clase' => 'TraspasoController',   'archivo' => 'modules/traspasos/TraspasoController.php'],
         'reportes'   => ['clase' => 'ReporteController',    'archivo' => 'modules/reportes/ReporteController.php'],
         'usuarios'   => ['clase' => 'UsuarioController',    'archivo' => 'modules/usuarios/UsuarioController.php'],
+        'sucursales' => ['clase' => 'SucursalController',  'archivo' => 'modules/sucursales/SucursalController.php'],
+        'facturas'   => ['clase' => 'FacturaController',   'archivo' => 'modules/facturas/FacturaController.php'],
     ];
 
     public static function dispatch(): void
@@ -24,8 +26,8 @@ class Router
 
         // Módulo por defecto si no está autenticado
         if (!Auth::estaAutenticado() && $modulo !== 'auth') {
-            $modulo = 'auth';
-            $accion = 'login';
+            header('Location: ' . APP_URL . '/?modulo=auth&accion=login');
+            exit;
         }
 
         if (!isset(self::$rutas[$modulo])) {

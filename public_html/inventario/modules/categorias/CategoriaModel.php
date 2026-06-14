@@ -50,11 +50,13 @@ class CategoriaModel extends Model
         $this->execute(
             'UPDATE categorias
                 SET nombre      = :nombre,
-                    descripcion = :descripcion
+                    descripcion = :descripcion,
+                    activa      = :activa
               WHERE id = :id',
             [
                 ':nombre'      => $datos['nombre'],
                 ':descripcion' => $datos['descripcion'] ?: null,
+                ':activa'      => isset($datos['activa']) ? (int)(bool)$datos['activa'] : 1,
                 ':id'          => $id,
             ]
         );

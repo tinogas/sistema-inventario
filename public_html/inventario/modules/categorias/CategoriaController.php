@@ -39,11 +39,11 @@ class CategoriaController extends Controller
             }
 
             try {
-                $this->model->crear([
+                $nuevoId = $this->model->crear([
                     'nombre'      => $nombre,
                     'descripcion' => $descripcion,
                 ]);
-                $this->auditoria('crear', 'categorias', 0, "Categoría: {$nombre}");
+                $this->auditoria('crear', 'categorias', $nuevoId, "Categoría: {$nombre}");
                 Session::flash('success', 'Categoría creada correctamente.');
             } catch (Exception $e) {
                 Session::flash('error', 'No se pudo crear la categoría. Verifica que el nombre no esté duplicado.');

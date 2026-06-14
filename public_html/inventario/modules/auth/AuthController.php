@@ -10,6 +10,7 @@ class AuthController extends Controller
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->validarCsrf();
             $email    = $this->postStr('email');
             $password = $_POST['password'] ?? '';
 
@@ -33,6 +34,11 @@ class AuthController extends Controller
 
     public function logout(): void
     {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/?modulo=dashboard');
+            return;
+        }
+        $this->validarCsrf();
         Auth::logout();
         $this->redirect('/?modulo=auth&accion=login');
     }

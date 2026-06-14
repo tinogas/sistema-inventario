@@ -4,7 +4,7 @@
             <i class="bi bi-arrow-left-right text-info me-2"></i>
             Traspaso — <?= htmlspecialchars($traspaso['folio_salida']) ?>
         </h4>
-        <span class="badge badge-estado-<?= $traspaso['traspaso_estado'] ?> mt-1">
+        <span class="badge badge-estado-<?= htmlspecialchars($traspaso['traspaso_estado']) ?> mt-1">
             <?= ucwords(str_replace('_',' ', $traspaso['traspaso_estado'])) ?>
         </span>
     </div>
@@ -22,7 +22,7 @@
                     <tr><th>Origen</th><td><?= htmlspecialchars($traspaso['sucursal_origen']) ?></td></tr>
                     <tr><th>Destino</th><td><?= htmlspecialchars($traspaso['sucursal_destino']) ?></td></tr>
                     <tr><th>Estado</th><td>
-                        <span class="badge badge-estado-<?= $traspaso['traspaso_estado'] ?>">
+                        <span class="badge badge-estado-<?= htmlspecialchars($traspaso['traspaso_estado']) ?>">
                             <?= ucwords(str_replace('_',' ', $traspaso['traspaso_estado'])) ?>
                         </span>
                     </td></tr>
@@ -86,7 +86,7 @@
     <?php if (Auth::tienePermiso('traspasos.confirmar')): ?>
     <form method="POST" action="<?= $appUrl ?>/?modulo=traspasos&accion=confirmar_recepcion">
         <input type="hidden" name="_csrf" value="<?= $csrf ?>">
-        <input type="hidden" name="traspaso_id" value="<?= $traspaso['id'] ?>">
+        <input type="hidden" name="traspaso_id" value="<?= (int)$traspaso['id'] ?>">
         <?php foreach ($partidas as $p): ?>
         <input type="hidden" class="recibido-hidden-<?= $p['producto_id'] ?>" name="recibido[<?= $p['producto_id'] ?>]" value="<?= $p['cantidad'] ?>">
         <?php endforeach; ?>
@@ -100,7 +100,7 @@
     <form method="POST" action="<?= $appUrl ?>/?modulo=traspasos&accion=cancelar"
           onsubmit="return confirm('¿Cancelar este traspaso? Se revertirá el stock en origen.')">
         <input type="hidden" name="_csrf" value="<?= $csrf ?>">
-        <input type="hidden" name="traspaso_id" value="<?= $traspaso['id'] ?>">
+        <input type="hidden" name="traspaso_id" value="<?= (int)$traspaso['id'] ?>">
         <button type="submit" class="btn btn-outline-danger">
             <i class="bi bi-x-circle me-1"></i> Cancelar traspaso
         </button>

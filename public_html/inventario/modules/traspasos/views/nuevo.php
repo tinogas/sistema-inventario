@@ -124,7 +124,7 @@ function buscarProducto(codigo) {
             if (data.encontrado) {
                 document.getElementById('inputStock').value = data.producto.stock_actual ?? '—';
                 agregarProducto(data.producto);
-            } else mostrarAlerta('Código no encontrado: ' + codigo, 'warning');
+            } else { const safeCode = String(codigo).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); mostrarAlerta('Código no encontrado: ' + safeCode, 'warning'); }
         });
 }
 
