@@ -59,3 +59,24 @@ function formatMXN(valor) {
 function formatNum(valor, decimales) {
     return new Intl.NumberFormat('es-MX', { minimumFractionDigits: decimales || 0 }).format(valor);
 }
+
+// Seleccionar todo el contenido de inputs numéricos al hacer foco (fix #5: evita escribir sobre "0.00")
+document.addEventListener('focusin', function (e) {
+    if (e.target.matches('input[type="number"]')) {
+        e.target.select();
+    }
+});
+
+// Vista previa de imagen al seleccionar archivo.
+// Cualquier <input type="file" data-preview="idImagen"> actualiza esa <img>.
+// Usa FileReader (compatible y fiable) en vez de createObjectURL.
+document.addEventListener('change', function (e) {
+    const inp = e.target;
+    if (!inp || !inp.matches || !inp.matches('input[type="file"][data-preview]')) return;
+    const img = document.getElementById(inp.dataset.preview);
+    const file = inp.files && inp.files[0];
+    if (!img || !file) return;
+    const reader = new FileReader();
+    reader.onload = function (ev) { img.src = ev.target.result; };
+    reader.readAsDataURL(file);
+});

@@ -71,9 +71,19 @@ class EntradaController extends Controller
         $sucursales  = $db->query('SELECT id, nombre FROM sucursales WHERE activa=1 ORDER BY nombre')->fetchAll();
         $proveedores = $db->query('SELECT id, razon_social FROM proveedores WHERE activo=1 ORDER BY razon_social')->fetchAll();
 
+        // Precarga opcional desde el detalle de un producto (?producto_id=&sucursal_id=)
+        $precargaCodigo   = '';
+        $precargaSucursal = $this->getInt('sucursal_id');
+        $pid = $this->getInt('producto_id');
+        if ($pid > 0) {
+            $st = $db->prepare('SELECT codigo FROM productos WHERE id = ? AND activo = 1');
+            $st->execute([$pid]);
+            $precargaCodigo = (string) ($st->fetchColumn() ?: '');
+        }
+
         $titulo    = 'Nueva entrada';
         $vistaPath = BASE_PATH . '/modules/entradas/views/nueva.php';
-        $this->render('entradas/nueva', compact('titulo','sucursales','proveedores','vistaPath'));
+        $this->render('entradas/nueva', compact('titulo','sucursales','proveedores','vistaPath','precargaCodigo','precargaSucursal'));
     }
 
     public function detalle(): void

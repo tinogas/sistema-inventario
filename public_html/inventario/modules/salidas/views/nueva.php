@@ -15,7 +15,7 @@
             <select name="sucursal_id" class="form-select" required>
                 <option value="">— Seleccionar —</option>
                 <?php foreach ($sucursales as $s): ?>
-                <option value="<?= $s['id'] ?>"><?= htmlspecialchars($s['nombre']) ?></option>
+                <option value="<?= $s['id'] ?>" <?= (!empty($precargaSucursal) && (int)$precargaSucursal === (int)$s['id']) ? 'selected' : '' ?>><?= htmlspecialchars($s['nombre']) ?></option>
                 <?php endforeach; ?>
             </select>
             <?php else: ?>
@@ -148,39 +148,101 @@
 <script src="<?= $appUrl ?>/assets/js/escaner.js"></script>
 <script>
 const APP_URL = '<?= $appUrl ?>';
-let partidas  = [];
+let partidas   = [];
+let prodActual = null;
 
-EscanerHandler.iniciar(function (codigo) { buscarProducto(codigo); });
+// Obtiene sucursal_id del FORMULARIO de salida (no del navbar).
+// IMPORTANTE: scope a #frmSalida — el navbar de admins tiene otro
+// <select name="sucursal_id"> que aparece antes en el DOM y lo capturaría.
+function getSucursalId() {
+    const form = document.getElementById('frmSalida');
+    const campo = form ? form.querySelector('[name="sucursal_id"]') : null;
+    return campo ? (campo.value || '') : '<?= Auth::sucursalActual() ?? '' ?>';
+}
 
-function buscarProducto(codigo) {
+function apiUrlCodigo(codigo) {
+    const sid = getSucursalId();
+    return APP_URL + '/api/productos_buscar.php?codigo=' + encodeURIComponent(codigo)
+         + (sid ? '&sucursal_id=' + encodeURIComponent(sid) : '');
+}
+
+EscanerHandler.iniciar(function (codigo) { buscarYCargar(codigo); });
+
+// Precarga desde el detalle de un producto: carga el producto (la sucursal ya viene preseleccionada)
+<?php if (!empty($precargaCodigo)): ?>
+window.addEventListener('DOMContentLoaded', function () {
+    buscarYCargar(<?= json_encode($precargaCodigo) ?>);
+});
+<?php endif; ?>
+
+function cargarProducto(prod) {
+    prodActual = prod;
+    const actual   = parseFloat(prod.stock_actual ?? 0);
+    const transito = parseFloat(prod.stock_en_transito ?? 0);
+    const disp     = (prod.stock_disponible !== undefined && prod.stock_disponible !== null)
+                     ? parseFloat(prod.stock_disponible) : actual;
+    // Mostrar: "12 (15 - 3 en tránsito)" — disponible y el desglose actual − tránsito
+    let label = String(disp);
+    if (transito > 0) label += ` (${actual} - ${transito} en tránsito)`;
+    document.getElementById('inputStockDisp').value = label;
+    document.getElementById('inputCantidad').focus();
+    document.getElementById('inputCantidad').select();
+}
+
+function buscarYCargar(codigo) {
     if (!codigo.trim()) return;
-    fetch(APP_URL + '/api/productos_buscar.php?codigo=' + encodeURIComponent(codigo))
+    const sid = getSucursalId();
+    if (!sid) {
+        mostrarAlerta('Selecciona la sucursal primero para ver el stock correcto de esa sucursal.', 'warning');
+        document.getElementById('frmSalida')?.querySelector('[name="sucursal_id"]')?.focus();
+        return;
+    }
+    fetch(apiUrlCodigo(codigo))
         .then(r => r.json())
         .then(data => {
-            if (data.encontrado) {
-                document.getElementById('inputStockDisp').value = data.producto.stock_actual ?? '—';
-                agregarProducto(data.producto);
-            } else {
-                mostrarAlerta('Código no encontrado: ' + codigo, 'warning');
-            }
+            if (data.encontrado) cargarProducto(data.producto);
+            else mostrarAlerta('Código no encontrado: ' + codigo, 'warning');
         });
 }
 
+// ---- Agregar producto a tabla con validación de stock ----
 function agregarProducto(prod) {
     const qty = parseFloat(document.getElementById('inputCantidad').value) || 1;
+    // stock_disponible = stock_actual − en_tránsito (calculado por la API)
+    const stockDisp = prod.stock_disponible !== undefined && prod.stock_disponible !== null
+                      ? parseFloat(prod.stock_disponible)
+                      : (prod.stock_actual !== null && prod.stock_actual !== undefined
+                         ? parseFloat(prod.stock_actual) : null);
+    if (stockDisp !== null && qty > stockDisp) {
+        mostrarAlerta(
+            `Stock insuficiente para "${prod.nombre}": disponible ${stockDisp.toFixed(3)}, requerido ${qty}. Ajusta la cantidad o usa "Forzar stock".`,
+            'warning'
+        );
+        document.getElementById('inputCantidad').focus();
+        document.getElementById('inputCantidad').select();
+        return;
+    }
+
     const idx = partidas.findIndex(p => p.producto_id == prod.id);
     if (idx >= 0) {
         partidas[idx].cantidad += qty;
     } else {
         partidas.push({
-            producto_id: prod.id, codigo: prod.codigo, nombre: prod.nombre,
-            cantidad: qty, precio_unitario: prod.precio_venta || 0,
-            stock_actual: prod.stock_actual ?? null,
+            producto_id:  prod.id,
+            codigo:       prod.codigo,
+            nombre:       prod.nombre,
+            cantidad:     qty,
+            precio_unitario: prod.precio_venta || 0,
+            // Guardar el DISPONIBLE (actual − tránsito) para que la tabla y la
+            // validación usen el mismo número que el campo "Stock disponible".
+            stock_disp:   stockDisp,
         });
     }
+    prodActual = null;
     renderTabla();
     document.getElementById('inputEscaner').value  = '';
     document.getElementById('inputCantidad').value = '1';
+    document.getElementById('inputStockDisp').value = '—';
     document.getElementById('inputEscaner').focus();
 }
 
@@ -192,7 +254,7 @@ function renderTabla() {
 
     let insuf = false;
     partidas.forEach((p, i) => {
-        const stockBajo = p.stock_actual !== null && p.cantidad > p.stock_actual;
+        const stockBajo = p.stock_disp !== null && p.stock_disp !== undefined && p.cantidad > p.stock_disp;
         if (stockBajo) insuf = true;
         const tr = document.createElement('tr');
         tr.className = stockBajo ? 'table-warning' : '';
@@ -200,7 +262,7 @@ function renderTabla() {
             <td>${i+1}</td>
             <td><code>${esc(p.codigo)}</code></td>
             <td>${esc(p.nombre)} ${stockBajo ? '<span class="badge bg-warning text-dark">Stock bajo</span>' : ''}</td>
-            <td class="text-end ${stockBajo?'text-danger fw-bold':''}">${p.stock_actual ?? '—'}</td>
+            <td class="text-end ${stockBajo?'text-danger fw-bold':''}">${(p.stock_disp !== null && p.stock_disp !== undefined) ? Number(p.stock_disp).toFixed(3) : '—'}</td>
             <td class="text-end">
                 <input type="hidden" name="producto_id[]"     value="${p.producto_id}">
                 <input type="hidden" name="precio_unitario[]" value="${p.precio_unitario}">
@@ -244,24 +306,36 @@ function mostrarAlerta(msg, tipo) {
     setTimeout(() => div.remove(), 4000);
 }
 
+// ---- Botón +Agregar: usa prodActual si existe, si no busca ----
 document.getElementById('btnAgregar').addEventListener('click', function() {
-    const c = document.getElementById('inputEscaner').value.trim();
-    if (c) buscarProducto(c);
+    if (prodActual) {
+        agregarProducto(prodActual);
+    } else {
+        const c = document.getElementById('inputEscaner').value.trim();
+        if (c) buscarYCargar(c);
+    }
 });
 
+// ---- Enter: igual que botón ----
 document.getElementById('inputEscaner').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); if (this.value.trim()) buscarProducto(this.value.trim()); }
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (prodActual) agregarProducto(prodActual);
+        else if (this.value.trim()) buscarYCargar(this.value.trim());
+    }
 });
 
-// Sugerencias autocomplete
+// ---- Autocomplete: tipear borra prodActual; seleccionar carga sin agregar ----
 let debounce = null;
 document.getElementById('inputEscaner').addEventListener('input', function() {
+    prodActual = null;
     const q = this.value.trim(); clearTimeout(debounce);
     if (q.length < 2) { document.getElementById('listaSugerencias').style.display='none'; return; }
     debounce = setTimeout(() => {
-        fetch(APP_URL + '/api/productos_buscar.php?q=' + encodeURIComponent(q))
-            .then(r => r.json())
-            .then(d => mostrarSugerencias(d.sugerencias || []));
+        const sid = getSucursalId();
+        const url = APP_URL + '/api/productos_buscar.php?q=' + encodeURIComponent(q)
+                  + (sid ? '&sucursal_id=' + encodeURIComponent(sid) : '');
+        fetch(url).then(r => r.json()).then(d => mostrarSugerencias(d.sugerencias || []));
     }, 250);
 });
 function mostrarSugerencias(items) {
@@ -272,7 +346,12 @@ function mostrarSugerencias(items) {
         const li = document.createElement('li');
         li.className = 'list-group-item list-group-item-action cursor-pointer py-1';
         li.textContent = `[${item.codigo}] ${item.nombre}`;
-        li.addEventListener('click', () => { lista.style.display='none'; document.getElementById('inputEscaner').value=item.codigo; buscarProducto(item.codigo); });
+        // Solo carga en campos — el usuario confirma con +Agregar
+        li.addEventListener('click', () => {
+            lista.style.display = 'none';
+            document.getElementById('inputEscaner').value = item.codigo;
+            buscarYCargar(item.codigo);
+        });
         lista.appendChild(li);
     });
     lista.style.display = 'block';

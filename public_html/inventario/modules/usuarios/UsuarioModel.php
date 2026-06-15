@@ -3,10 +3,17 @@ require_once BASE_PATH . '/core/Model.php';
 
 class UsuarioModel extends Model
 {
+    public function __construct()
+    {
+        parent::__construct();
+        try { $this->db->exec("ALTER TABLE usuarios ADD COLUMN foto VARCHAR(255) NULL"); }
+        catch (PDOException $e) { /* ya existe */ }
+    }
+
     public function listar(): array
     {
         return $this->fetchAll(
-            'SELECT u.id, u.nombre, u.email, u.rol, u.activo, u.ultimo_acceso, u.created_at,
+            'SELECT u.id, u.nombre, u.email, u.rol, u.activo, u.ultimo_acceso, u.created_at, u.foto,
                     s.nombre AS sucursal_nombre
              FROM usuarios u
              LEFT JOIN sucursales s ON s.id = u.sucursal_id
@@ -18,7 +25,7 @@ class UsuarioModel extends Model
     {
         return $this->fetchOne(
             'SELECT u.id, u.nombre, u.email, u.rol, u.sucursal_id, u.activo,
-                    u.ultimo_acceso, u.created_at,
+                    u.ultimo_acceso, u.created_at, u.foto,
                     s.nombre AS sucursal_nombre
              FROM usuarios u
              LEFT JOIN sucursales s ON s.id = u.sucursal_id
@@ -32,14 +39,15 @@ class UsuarioModel extends Model
         $hash = password_hash($datos['password'], PASSWORD_BCRYPT, ['cost' => 12]);
 
         $this->execute(
-            'INSERT INTO usuarios (nombre, email, password_hash, rol, sucursal_id)
-             VALUES (:nombre, :email, :hash, :rol, :sucursal_id)',
+            'INSERT INTO usuarios (nombre, email, password_hash, rol, sucursal_id, foto)
+             VALUES (:nombre, :email, :hash, :rol, :sucursal_id, :foto)',
             [
                 ':nombre'      => $datos['nombre'],
                 ':email'       => strtolower(trim($datos['email'])),
                 ':hash'        => $hash,
                 ':rol'         => $datos['rol'],
                 ':sucursal_id' => ($datos['sucursal_id'] > 0) ? (int)$datos['sucursal_id'] : null,
+                ':foto'        => $datos['foto'] ?? null,
             ]
         );
         return $this->lastInsertId();
@@ -55,7 +63,7 @@ class UsuarioModel extends Model
             $this->execute(
                 'UPDATE usuarios
                  SET nombre = :nombre, email = :email, password_hash = :hash,
-                     rol = :rol, sucursal_id = :sucursal_id
+                     rol = :rol, sucursal_id = :sucursal_id, foto = :foto, activo = :activo
                  WHERE id = :id',
                 [
                     ':nombre'      => $datos['nombre'],
@@ -63,6 +71,8 @@ class UsuarioModel extends Model
                     ':hash'        => $hash,
                     ':rol'         => $datos['rol'],
                     ':sucursal_id' => ($datos['sucursal_id'] > 0) ? (int)$datos['sucursal_id'] : null,
+                    ':foto'        => $datos['foto'] ?? null,
+                    ':activo'      => isset($datos['activo']) ? (int)$datos['activo'] : 1,
                     ':id'          => $id,
                 ]
             );
@@ -70,13 +80,15 @@ class UsuarioModel extends Model
             $this->execute(
                 'UPDATE usuarios
                  SET nombre = :nombre, email = :email,
-                     rol = :rol, sucursal_id = :sucursal_id
+                     rol = :rol, sucursal_id = :sucursal_id, foto = :foto, activo = :activo
                  WHERE id = :id',
                 [
                     ':nombre'      => $datos['nombre'],
                     ':email'       => strtolower(trim($datos['email'])),
                     ':rol'         => $datos['rol'],
                     ':sucursal_id' => ($datos['sucursal_id'] > 0) ? (int)$datos['sucursal_id'] : null,
+                    ':foto'        => $datos['foto'] ?? null,
+                    ':activo'      => isset($datos['activo']) ? (int)$datos['activo'] : 1,
                     ':id'          => $id,
                 ]
             );

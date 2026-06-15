@@ -8,6 +8,7 @@ require_once BASE_PATH . '/config/app.php';
 require_once BASE_PATH . '/config/database.php';
 
 // Cargar núcleo
+require_once BASE_PATH . '/core/helpers.php';
 require_once BASE_PATH . '/core/Session.php';
 require_once BASE_PATH . '/core/Auth.php';
 require_once BASE_PATH . '/core/Model.php';

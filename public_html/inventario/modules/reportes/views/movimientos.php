@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="fw-bold mb-0"><i class="bi bi-clock-history text-secondary me-2"></i>Movimientos</h4>
-    <a href="?modulo=reportes&accion=movimientos&<?= http_build_query(array_filter(['sucursal_id'=>$sucursal_id,'tipo'=>$tipo,'desde'=>$desde,'hasta'=>$hasta,'exportar'=>1])) ?>"
+    <a href="?modulo=reportes&accion=movimientos&<?= http_build_query(array_filter(['sucursal_id'=>$sucursal_id,'tipo'=>$tipo,'desde'=>$desde,'hasta'=>$hasta,'estado'=>$estado,'producto'=>$producto,'exportar'=>1])) ?>"
        class="btn btn-outline-success btn-sm">
         <i class="bi bi-download me-1"></i> Exportar CSV
     </a>
@@ -9,7 +9,23 @@
 <form method="GET" action="<?= $appUrl ?>/" class="row g-2 mb-3 align-items-end">
     <input type="hidden" name="modulo" value="reportes">
     <input type="hidden" name="accion" value="movimientos">
-    <?php if ($sucursal_id): ?><input type="hidden" name="sucursal_id" value="<?= $sucursal_id ?>"><?php endif; ?>
+    <div class="col-md-2">
+        <label class="form-label small">Sucursal</label>
+        <?php if (Auth::esAdmin()): ?>
+        <select name="sucursal_id" class="form-select form-select-sm">
+            <option value="">Todas</option>
+            <?php foreach ($sucursales as $s): ?>
+            <option value="<?= $s['id'] ?>" <?= (int)$sucursal_id === (int)$s['id'] ? 'selected' : '' ?>><?= htmlspecialchars($s['nombre']) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <?php else:
+            $miSuc = array_values(array_filter($sucursales, fn($s) => (int)$s['id'] === (int)Auth::sucursalActual()));
+            $miSucNombre = $miSuc[0]['nombre'] ?? 'Mi sucursal';
+        ?>
+        <input type="hidden" name="sucursal_id" value="<?= (int)Auth::sucursalActual() ?>">
+        <input type="text" class="form-control form-control-sm" value="<?= htmlspecialchars($miSucNombre) ?>" disabled>
+        <?php endif; ?>
+    </div>
     <div class="col-md-2">
         <label class="form-label small">Tipo</label>
         <select name="tipo" class="form-select form-select-sm">
@@ -22,12 +38,25 @@
         </select>
     </div>
     <div class="col-md-2">
+        <label class="form-label small">Estado</label>
+        <select name="estado" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            <option value="borrador"    <?= $estado==='borrador'?'selected':'' ?>>Borrador</option>
+            <option value="confirmado"  <?= $estado==='confirmado'?'selected':'' ?>>Confirmado</option>
+            <option value="cancelado"   <?= $estado==='cancelado'?'selected':'' ?>>Cancelado</option>
+        </select>
+    </div>
+    <div class="col-md-2">
         <label class="form-label small">Desde</label>
         <input type="date" name="desde" class="form-control form-control-sm" value="<?= $desde ?>">
     </div>
     <div class="col-md-2">
         <label class="form-label small">Hasta</label>
         <input type="date" name="hasta" class="form-control form-control-sm" value="<?= $hasta ?>">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small">Producto (nombre o código)</label>
+        <input type="text" name="producto" class="form-control form-control-sm" placeholder="Buscar producto..." value="<?= htmlspecialchars($producto) ?>">
     </div>
     <div class="col-auto">
         <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-funnel me-1"></i>Filtrar</button>
@@ -81,7 +110,7 @@
     <ul class="pagination pagination-sm justify-content-end mb-0">
         <?php for ($p=1; $p<=$resultado['total_paginas']; $p++): ?>
         <li class="page-item <?= $p==$resultado['pagina']?'active':'' ?>">
-            <a class="page-link" href="<?= $appUrl ?>/?modulo=reportes&accion=movimientos&tipo=<?= urlencode($tipo) ?>&desde=<?= $desde ?>&hasta=<?= $hasta ?>&pagina=<?= $p ?>"><?= $p ?></a>
+            <a class="page-link" href="<?= $appUrl ?>/?<?= http_build_query(array_filter(['modulo'=>'reportes','accion'=>'movimientos','sucursal_id'=>$sucursal_id,'tipo'=>$tipo,'desde'=>$desde,'hasta'=>$hasta,'estado'=>$estado,'producto'=>$producto,'pagina'=>$p], fn($v) => $v !== '' && $v !== null && $v !== 0)) ?>"><?= $p ?></a>
         </li>
         <?php endfor; ?>
     </ul>

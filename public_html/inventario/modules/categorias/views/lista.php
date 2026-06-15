@@ -1,10 +1,19 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 mb-0"><i class="bi bi-tags me-2 text-primary"></i>Categorías</h1>
-    <?php if (Auth::esAdmin()): ?>
-    <a href="<?= $appUrl ?>/?modulo=categorias&accion=nuevo" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> Nueva categoría
-    </a>
-    <?php endif; ?>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="<?= $appUrl ?>/?modulo=categorias&accion=exportar_csv"
+           class="btn btn-sm btn-outline-secondary" title="Exportar CSV">
+            <i class="bi bi-filetype-csv me-1"></i>CSV
+        </a>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()" title="Imprimir">
+            <i class="bi bi-printer"></i>
+        </button>
+        <?php if (Auth::esAdmin()): ?>
+        <a href="<?= $appUrl ?>/?modulo=categorias&accion=nuevo" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Nueva categoría
+        </a>
+        <?php endif; ?>
+    </div>
 </div>
 
 <div class="card shadow-sm">

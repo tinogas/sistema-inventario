@@ -1,5 +1,6 @@
 <?php
 require_once BASE_PATH . '/core/Controller.php';
+require_once BASE_PATH . '/core/Upload.php';
 require_once BASE_PATH . '/modules/sucursales/SucursalModel.php';
 
 class SucursalController extends Controller
@@ -30,9 +31,16 @@ class SucursalController extends Controller
                 'ciudad'    => $this->postStr('ciudad'),
                 'direccion' => $this->postStr('direccion'),
                 'telefono'  => $this->postStr('telefono'),
+                'latitud'   => $this->postStr('latitud'),
+                'longitud'  => $this->postStr('longitud'),
+                'foto'      => null,
             ];
-            if (!$datos['nombre'] || !$datos['ciudad']) {
-                Session::flash('error', 'Nombre y ciudad son obligatorios.');
+            $errFoto = '';
+            try { $datos['foto'] = Upload::imagen('foto', 'sucursal'); }
+            catch (RuntimeException $e) { $errFoto = $e->getMessage(); }
+
+            if (!$datos['nombre'] || !$datos['ciudad'] || $errFoto) {
+                Session::flash('error', $errFoto ?: 'Nombre y ciudad son obligatorios.');
                 $titulo = 'Nueva sucursal';
                 $this->render('sucursales/form', compact('titulo', 'datos'));
                 return;
@@ -66,10 +74,17 @@ class SucursalController extends Controller
                 'ciudad'    => $this->postStr('ciudad'),
                 'direccion' => $this->postStr('direccion'),
                 'telefono'  => $this->postStr('telefono'),
+                'latitud'   => $this->postStr('latitud'),
+                'longitud'  => $this->postStr('longitud'),
                 'activa'    => isset($_POST['activa']),
+                'foto'      => $sucursal['foto'] ?? null,
             ];
-            if (!$datos['nombre'] || !$datos['ciudad']) {
-                Session::flash('error', 'Nombre y ciudad son obligatorios.');
+            $errFoto = '';
+            try { $datos['foto'] = Upload::imagen('foto', 'sucursal', $sucursal['foto'] ?? null); }
+            catch (RuntimeException $e) { $errFoto = $e->getMessage(); }
+
+            if (!$datos['nombre'] || !$datos['ciudad'] || $errFoto) {
+                Session::flash('error', $errFoto ?: 'Nombre y ciudad son obligatorios.');
             } else {
                 $this->model->actualizar($id, $datos);
                 $this->auditoria('editar_sucursal', 'sucursales', $id);

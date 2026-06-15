@@ -21,7 +21,7 @@ class FacturaController extends Controller
 
         $resultado = $this->model->listar($sucursal_id, $estado, $buscar, $pagina);
         $titulo    = 'Facturas de servicio';
-        $this->render('facturas/lista', compact('titulo','resultado','estado','buscar','vistaPath'));
+        $this->render('facturas/lista', compact('titulo','resultado','estado','buscar'));
     }
 
     public function nueva(): void
@@ -155,14 +155,13 @@ class FacturaController extends Controller
         $sucId      = Auth::sucursalActual();
         $sucursales = $db->query('SELECT id, nombre FROM sucursales WHERE activa=1 ORDER BY nombre')->fetchAll();
 
-        $stmt = $db->prepare(
-            'SELECT id, nombre FROM mecanicos WHERE activo=1' .
-            ($sucId ? ' AND sucursal_id=?' : '') . ' ORDER BY nombre'
-        );
-        $sucId ? $stmt->execute([$sucId]) : $stmt->execute([]);
-        $mecanicos = $stmt->fetchAll();
+        // Todos los mecánicos activos CON su sucursal; el filtrado por sucursal
+        // se hace en el cliente al elegir la sucursal de la factura.
+        $mecanicos = $db->query(
+            'SELECT id, nombre, sucursal_id FROM mecanicos WHERE activo=1 ORDER BY nombre'
+        )->fetchAll();
 
-        $servicios = $db->query('SELECT id, nombre FROM servicios WHERE activo=1 ORDER BY nombre')->fetchAll();
+        $servicios = $db->query('SELECT id, nombre, precio FROM servicios WHERE activo=1 ORDER BY nombre')->fetchAll();
         return [$sucursales, $mecanicos, $servicios];
     }
 

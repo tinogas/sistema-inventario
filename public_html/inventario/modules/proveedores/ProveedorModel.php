@@ -22,6 +22,24 @@ class ProveedorModel extends Model
         return $this->paginar($sql, $params, $pagina, 20);
     }
 
+    /**
+     * Todos los proveedores para exportación CSV (sin paginación).
+     */
+    public function getAll(): array
+    {
+        return $this->fetchAll(
+            "SELECT id,
+                    razon_social       AS 'Razon social',
+                    rfc                AS RFC,
+                    contacto           AS Contacto,
+                    telefono           AS Telefono,
+                    email              AS Email,
+                    IF(activo, 'Sí', 'No') AS Activo
+             FROM proveedores
+             ORDER BY razon_social ASC"
+        );
+    }
+
     public function getById(int $id): ?array
     {
         return $this->fetchOne(

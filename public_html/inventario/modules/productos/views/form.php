@@ -246,11 +246,13 @@ $sel = function(string $campo, mixed $valor) use ($producto): string {
     const inputEscaner    = document.getElementById('inputEscaner');
     const campoCodigo     = document.getElementById('codigo');
     const modalEscanerEl  = document.getElementById('modalEscaner');
-    const modalEscaner    = new bootstrap.Modal(modalEscanerEl);
+    // Lazy: Bootstrap JS carga al final del body, después de este script.
+    // getOrCreateInstance se llama al usarlo (click), ya con bootstrap cargado.
+    const getModalEscaner = () => bootstrap.Modal.getOrCreateInstance(modalEscanerEl);
 
     btnEscaner.addEventListener('click', function () {
         inputEscaner.value = '';
-        modalEscaner.show();
+        getModalEscaner().show();
         // Dar foco al input del modal al abrirse
         modalEscanerEl.addEventListener('shown.bs.modal', function handler() {
             inputEscaner.focus();
@@ -273,7 +275,7 @@ $sel = function(string $campo, mixed $valor) use ($producto): string {
         if (codigo !== '') {
             campoCodigo.value = codigo;
         }
-        modalEscaner.hide();
+        getModalEscaner().hide();
         campoCodigo.focus();
     }
 

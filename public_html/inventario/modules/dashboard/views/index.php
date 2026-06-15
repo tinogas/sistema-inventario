@@ -1,6 +1,11 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="fw-bold mb-0"><i class="bi bi-speedometer2 me-2 text-warning"></i>Dashboard</h4>
-    <span class="text-muted small"><?= date('l, d \d\e F \d\e Y') ?></span>
+    <?php
+    $diasEs  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    $mesesEs = ['','enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    $fechaEs = $diasEs[(int)date('w')] . ', ' . date('j') . ' de ' . $mesesEs[(int)date('n')] . ' de ' . date('Y');
+    ?>
+    <span class="text-muted small"><?= $fechaEs ?></span>
 </div>
 
 <!-- KPIs -->
@@ -158,32 +163,45 @@
 <script>
 const APP_URL = '<?= $appUrl ?>';
 
-// Gráfica movimientos 7 días
-(function () {
+// Gráfica movimientos 7 días.
+// IMPORTANTE: se difiere a DOMContentLoaded porque este <script> está dentro de
+// la vista (#main-content) y Chart.js se carga al FINAL del <body>. Sin diferir,
+// 'Chart' aún no existe al ejecutarse y la gráfica nunca se dibuja.
+document.addEventListener('DOMContentLoaded', function () {
     const data = <?= json_encode($movimientos7) ?>;
-    const labels   = data.map(r => {
+    const ctx  = document.getElementById('chartMovimientos');
+    if (!ctx) return;
+    if (typeof Chart === 'undefined') {
+        ctx.insertAdjacentHTML('afterend',
+            '<p class="text-muted text-center small mt-2">No se pudo cargar la librería de gráficas (¿sin conexión a internet?).</p>');
+        return;
+    }
+
+    const labels    = data.map(r => {
         const d = new Date(r.fecha + 'T00:00:00');
         return d.toLocaleDateString('es-MX', { weekday:'short', day:'numeric' });
     });
-    const entradas = data.map(r => parseInt(r.entradas) || 0);
-    const salidas  = data.map(r => parseInt(r.salidas)  || 0);
+    const entradas  = data.map(r => parseInt(r.entradas)  || 0);
+    const salidas   = data.map(r => parseInt(r.salidas)   || 0);
+    const traspasos = data.map(r => parseInt(r.traspasos) || 0);
+    const facturas  = data.map(r => parseInt(r.facturas)  || 0);
 
-    const ctx = document.getElementById('chartMovimientos');
-    if (!ctx) return;
     new Chart(ctx, {
         type: 'bar',
         data: {
             labels,
             datasets: [
-                { label: 'Entradas', data: entradas, backgroundColor: '#86efac', borderRadius: 4 },
-                { label: 'Salidas',  data: salidas,  backgroundColor: '#fca5a5', borderRadius: 4 },
+                { label: 'Entradas',  data: entradas,  backgroundColor: '#86efac', borderRadius: 4 },
+                { label: 'Salidas',   data: salidas,   backgroundColor: '#fca5a5', borderRadius: 4 },
+                { label: 'Traspasos', data: traspasos, backgroundColor: '#93c5fd', borderRadius: 4 },
+                { label: 'Facturas',  data: facturas,  backgroundColor: '#fde68a', borderRadius: 4 },
             ]
         },
         options: {
             responsive: true,
             plugins: { legend: { position: 'bottom' } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } } }
         }
     });
-})();
+});
 </script>

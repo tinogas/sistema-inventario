@@ -69,20 +69,55 @@ class DashboardModel extends Model
 
     public function getMovimientos7Dias(?int $sucursal_id): array
     {
-        $sucWhere = $sucursal_id ? 'AND sucursal_id = :sid' : '';
-        $params   = $sucursal_id ? [':sid' => $sucursal_id] : [];
+        // Generar los 7 días como base (garantiza que aparezcan días sin actividad)
+        $dias = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $f = date('Y-m-d', strtotime("-{$i} days"));
+            $dias[$f] = ['fecha' => $f, 'entradas' => 0, 'salidas' => 0, 'traspasos' => 0, 'facturas' => 0];
+        }
 
-        return $this->fetchAll(
+        // Movimientos (entradas, salidas, traspasos)
+        $sucWhereM = $sucursal_id ? 'AND sucursal_id = :sid' : '';
+        $paramsM   = $sucursal_id ? [':sid' => $sucursal_id] : [];
+        $movRows   = $this->fetchAll(
             "SELECT DATE(created_at) AS fecha,
-                    SUM(tipo = 'entrada') AS entradas,
-                    SUM(tipo = 'salida')  AS salidas
+                    SUM(tipo = 'entrada')        AS entradas,
+                    SUM(tipo = 'salida')          AS salidas,
+                    SUM(tipo = 'traspaso_salida') AS traspasos
              FROM movimientos
              WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-             {$sucWhere}
-             GROUP BY DATE(created_at)
-             ORDER BY fecha ASC",
-            $params
+               AND estado = 'confirmado'
+             {$sucWhereM}
+             GROUP BY DATE(created_at)",
+            $paramsM
         );
+        foreach ($movRows as $r) {
+            if (isset($dias[$r['fecha']])) {
+                $dias[$r['fecha']]['entradas']  = (int)$r['entradas'];
+                $dias[$r['fecha']]['salidas']   = (int)$r['salidas'];
+                $dias[$r['fecha']]['traspasos'] = (int)$r['traspasos'];
+            }
+        }
+
+        // Facturas emitidas/pagadas (no canceladas ni borradores)
+        $sucWhereF = $sucursal_id ? 'AND sucursal_id = :sid' : '';
+        $paramsF   = $sucursal_id ? [':sid' => $sucursal_id] : [];
+        $facRows   = $this->fetchAll(
+            "SELECT DATE(created_at) AS fecha, COUNT(*) AS facturas
+             FROM facturas
+             WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+               AND estado IN ('emitida','pagada')
+             {$sucWhereF}
+             GROUP BY DATE(created_at)",
+            $paramsF
+        );
+        foreach ($facRows as $r) {
+            if (isset($dias[$r['fecha']])) {
+                $dias[$r['fecha']]['facturas'] = (int)$r['facturas'];
+            }
+        }
+
+        return array_values($dias);
     }
 
     public function getUltimasActividades(?int $sucursal_id, int $limite = 8): array

@@ -23,11 +23,29 @@
 
 <div class="card border-0 shadow-sm" style="max-width:620px">
     <div class="card-body p-4">
-        <form method="POST"
+        <form method="POST" enctype="multipart/form-data"
               action="<?= $appUrl ?>/?modulo=usuarios&accion=<?= isset($id) ? 'editar&id=' . $id : 'nuevo' ?>"
               id="formUsuario"
               autocomplete="off">
             <input type="hidden" name="_csrf" value="<?= $csrf ?>">
+
+            <!-- Foto -->
+            <div class="mb-3 text-center">
+                <?php
+                    // OJO: aquí $usuario es el usuario LOGUEADO (lo inyecta el layout),
+                    // NO el usuario que se edita. La foto del editado viene en $datos['foto'].
+                    $fotoActual = $datos['foto'] ?? null;
+                ?>
+                <img id="previewFoto"
+                     src="<?= foto_o_avatar($fotoActual, $datos['nombre'] ?: 'Usuario', $appUrl, 128) ?>"
+                     alt="Foto" class="rounded-circle border" style="width:120px;height:120px;object-fit:cover">
+                <div class="mt-2">
+                    <label for="foto" class="form-label fw-semibold small">Foto del usuario</label>
+                    <input type="file" id="foto" name="foto" class="form-control form-control-sm" accept="image/*"
+                           data-preview="previewFoto">
+                    <div class="form-text">JPG, PNG, WEBP o GIF. Máx. 4 MB.</div>
+                </div>
+            </div>
 
             <!-- Nombre -->
             <div class="mb-3">
@@ -125,6 +143,18 @@
                     <?php endforeach; ?>
                 </select>
             </div>
+
+            <!-- Activo (solo en edición) -->
+            <?php if (isset($id)): ?>
+            <div class="mb-4">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="activo" name="activo" value="1"
+                           <?= ($datos['activo'] ?? 1) ? 'checked' : '' ?>>
+                    <label class="form-check-label fw-semibold" for="activo">Cuenta activa</label>
+                </div>
+                <div class="form-text">Si se desactiva, el usuario no podrá iniciar sesión.</div>
+            </div>
+            <?php endif; ?>
 
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary">

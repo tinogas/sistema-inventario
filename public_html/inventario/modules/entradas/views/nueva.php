@@ -16,7 +16,7 @@
             <select name="sucursal_id" class="form-select" required>
                 <option value="">— Seleccionar —</option>
                 <?php foreach ($sucursales as $s): ?>
-                <option value="<?= $s['id'] ?>"><?= htmlspecialchars($s['nombre']) ?></option>
+                <option value="<?= $s['id'] ?>" <?= (!empty($precargaSucursal) && (int)$precargaSucursal === (int)$s['id']) ? 'selected' : '' ?>><?= htmlspecialchars($s['nombre']) ?></option>
                 <?php endforeach; ?>
             </select>
             <?php else: ?>
@@ -151,50 +151,76 @@
 <script src="<?= $appUrl ?>/assets/js/escaner.js"></script>
 <script>
 const APP_URL = '<?= $appUrl ?>';
-let partidas  = [];  // [{producto_id, codigo, nombre, cantidad, precio_unitario}, ...]
+let partidas   = [];
+let prodActual = null;  // producto cargado en los campos, pendiente de agregar
 
-// ---- Iniciar escáner ----
+// ---- Escáner: busca y agrega directo (flujo rápido de escaneo) ----
 EscanerHandler.iniciar(function (codigo) {
-    buscarProductoPorCodigo(codigo);
+    buscarYAgregar(codigo);
 });
 
-// ---- Buscar producto por código (escáner o manual) ----
-function buscarProductoPorCodigo(codigo) {
+// Precarga desde el detalle de un producto: carga el producto en los campos
+<?php if (!empty($precargaCodigo)): ?>
+window.addEventListener('DOMContentLoaded', function () {
+    buscarYCargar(<?= json_encode($precargaCodigo) ?>);
+});
+<?php endif; ?>
+
+// ---- Cargar producto en campos sin agregar a tabla (autocomplete / búsqueda manual) ----
+function cargarProducto(prod) {
+    prodActual = prod;
+    document.getElementById('inputPrecio').value = prod.precio_costo || 0;
+    document.getElementById('inputCantidad').focus();
+    document.getElementById('inputCantidad').select();
+}
+
+// ---- Buscar y CARGAR en campos (autocomplete) ----
+function buscarYCargar(codigo) {
     if (!codigo.trim()) return;
     fetch(APP_URL + '/api/productos_buscar.php?codigo=' + encodeURIComponent(codigo))
         .then(r => r.json())
         .then(data => {
-            if (data.encontrado) {
-                agregarProducto(data.producto);
-            } else {
-                mostrarAlerta('Código no encontrado: ' + codigo, 'warning');
-            }
+            if (data.encontrado) cargarProducto(data.producto);
+            else mostrarAlerta('Código no encontrado: ' + codigo, 'warning');
+        })
+        .catch(() => mostrarAlerta('Error al buscar el producto.', 'danger'));
+}
+
+// ---- Buscar y AGREGAR a tabla (escáner / botón cuando no hay prodActual) ----
+function buscarYAgregar(codigo) {
+    if (!codigo.trim()) return;
+    fetch(APP_URL + '/api/productos_buscar.php?codigo=' + encodeURIComponent(codigo))
+        .then(r => r.json())
+        .then(data => {
+            if (data.encontrado) agregarProducto(data.producto);
+            else mostrarAlerta('Código no encontrado: ' + codigo, 'warning');
         })
         .catch(() => mostrarAlerta('Error al buscar el producto.', 'danger'));
 }
 
 // ---- Agregar producto a la tabla ----
 function agregarProducto(prod) {
-    const idx = partidas.findIndex(p => p.producto_id == prod.id);
-    const qty   = parseFloat(document.getElementById('inputCantidad').value) || 1;
+    const qty    = parseFloat(document.getElementById('inputCantidad').value) || 1;
     const precio = prod.precio_costo || parseFloat(document.getElementById('inputPrecio').value) || 0;
+    const idx    = partidas.findIndex(p => p.producto_id == prod.id);
 
     if (idx >= 0) {
         partidas[idx].cantidad       += qty;
         partidas[idx].precio_unitario = precio;
     } else {
         partidas.push({
-            producto_id:    prod.id,
-            codigo:         prod.codigo,
-            nombre:         prod.nombre,
-            cantidad:       qty,
+            producto_id:     prod.id,
+            codigo:          prod.codigo,
+            nombre:          prod.nombre,
+            cantidad:        qty,
             precio_unitario: precio,
         });
     }
+    prodActual = null;
     renderTabla();
     document.getElementById('inputEscaner').value  = '';
     document.getElementById('inputCantidad').value = '1';
-    document.getElementById('inputPrecio').value   = precio;
+    document.getElementById('inputPrecio').value   = '';
     document.getElementById('inputEscaner').focus();
 }
 
@@ -273,23 +299,32 @@ function mostrarAlerta(msg, tipo) {
     setTimeout(() => div.remove(), 4000);
 }
 
-// ---- Botón agregar manual ----
+// ---- Botón +Agregar: usa prodActual si existe, si no busca por código ----
 document.getElementById('btnAgregar').addEventListener('click', function () {
-    const codigo = document.getElementById('inputEscaner').value.trim();
-    if (codigo) buscarProductoPorCodigo(codigo);
-});
-
-document.getElementById('inputEscaner').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        const codigo = this.value.trim();
-        if (codigo) buscarProductoPorCodigo(codigo);
+    if (prodActual) {
+        agregarProducto(prodActual);
+    } else {
+        const codigo = document.getElementById('inputEscaner').value.trim();
+        if (codigo) buscarYAgregar(codigo);
     }
 });
 
-// ---- Sugerencias de búsqueda (autocomplete) ----
+// ---- Enter en escáner: igual que botón ----
+document.getElementById('inputEscaner').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (prodActual) {
+            agregarProducto(prodActual);
+        } else if (this.value.trim()) {
+            buscarYAgregar(this.value.trim());
+        }
+    }
+});
+
+// ---- Autocomplete (tipear borra prodActual; seleccionar carga sin agregar) ----
 let debounceTimer = null;
 document.getElementById('inputEscaner').addEventListener('input', function () {
+    prodActual = null;  // Al escribir manualmente se descarta el producto cargado
     const q = this.value.trim();
     clearTimeout(debounceTimer);
     if (q.length < 2) { document.getElementById('listaSugerencias').style.display = 'none'; return; }
@@ -308,10 +343,11 @@ function mostrarSugerencias(items) {
         const li = document.createElement('li');
         li.className = 'list-group-item list-group-item-action cursor-pointer py-1';
         li.textContent = `[${item.codigo}] ${item.nombre}`;
+        // Solo carga en campos — NO agrega. El usuario confirma con +Agregar
         li.addEventListener('click', function () {
             lista.style.display = 'none';
             document.getElementById('inputEscaner').value = item.codigo;
-            buscarProductoPorCodigo(item.codigo);
+            buscarYCargar(item.codigo);
         });
         lista.appendChild(li);
     });

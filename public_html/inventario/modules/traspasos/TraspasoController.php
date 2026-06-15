@@ -78,7 +78,7 @@ class TraspasoController extends Controller
             $this->redirect('/?modulo=traspasos');
         }
 
-        $partidas  = $this->model->getPartidas($traspaso['movimiento_salida_id']);
+        $partidas  = $this->model->getPartidasComparadas($traspaso);
         $titulo    = 'Detalle traspaso';
         $vistaPath = BASE_PATH . '/modules/traspasos/views/detalle.php';
         $this->render('traspasos/detalle', compact('titulo','traspaso','partidas','vistaPath'));

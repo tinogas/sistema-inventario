@@ -3,12 +3,20 @@ require_once BASE_PATH . '/core/Model.php';
 
 class MecanicoModel extends Model
 {
+    public function __construct()
+    {
+        parent::__construct();
+        // Migración: columna foto si no existe (para BD ya instaladas)
+        try { $this->db->exec("ALTER TABLE mecanicos ADD COLUMN foto VARCHAR(255) NULL"); }
+        catch (PDOException $e) { /* ya existe */ }
+    }
+
     /**
      * Lista mecánicos activos. Si se pasa sucursal_id filtra por ella.
      */
     public function listar(?int $sucursal_id = null): array
     {
-        $sql = 'SELECT m.id, m.nombre, m.telefono, m.activo,
+        $sql = 'SELECT m.id, m.nombre, m.telefono, m.activo, m.foto,
                        s.nombre AS sucursal_nombre, s.id AS sucursal_id
                 FROM mecanicos m
                 INNER JOIN sucursales s ON s.id = m.sucursal_id
@@ -38,12 +46,13 @@ class MecanicoModel extends Model
     public function crear(array $datos): int
     {
         $this->execute(
-            'INSERT INTO mecanicos (nombre, sucursal_id, telefono)
-             VALUES (:nombre, :sucursal_id, :telefono)',
+            'INSERT INTO mecanicos (nombre, sucursal_id, telefono, foto)
+             VALUES (:nombre, :sucursal_id, :telefono, :foto)',
             [
                 ':nombre'      => $datos['nombre'],
                 ':sucursal_id' => (int) $datos['sucursal_id'],
                 ':telefono'    => $datos['telefono'] ?: null,
+                ':foto'        => $datos['foto'] ?: null,
             ]
         );
         return $this->lastInsertId();
@@ -53,12 +62,13 @@ class MecanicoModel extends Model
     {
         $this->execute(
             'UPDATE mecanicos
-             SET nombre = :nombre, sucursal_id = :sucursal_id, telefono = :telefono
+             SET nombre = :nombre, sucursal_id = :sucursal_id, telefono = :telefono, foto = :foto
              WHERE id = :id',
             [
                 ':nombre'      => $datos['nombre'],
                 ':sucursal_id' => (int) $datos['sucursal_id'],
                 ':telefono'    => $datos['telefono'] ?: null,
+                ':foto'        => $datos['foto'] ?: null,
                 ':id'          => $id,
             ]
         );

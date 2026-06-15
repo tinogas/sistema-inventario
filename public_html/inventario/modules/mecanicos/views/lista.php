@@ -2,11 +2,20 @@
     <h4 class="fw-bold mb-0">
         <i class="bi bi-person-gear me-2 text-primary"></i>Mecánicos
     </h4>
-    <?php if (Auth::tienePermiso('mecanicos.editar')): ?>
-    <a href="<?= $appUrl ?>/?modulo=mecanicos&accion=nuevo" class="btn btn-primary btn-sm">
-        <i class="bi bi-plus-lg me-1"></i>Nuevo mecánico
-    </a>
-    <?php endif; ?>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="<?= $appUrl ?>/?modulo=mecanicos&accion=exportar_csv"
+           class="btn btn-sm btn-outline-secondary" title="Exportar CSV">
+            <i class="bi bi-filetype-csv me-1"></i>CSV
+        </a>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()" title="Imprimir">
+            <i class="bi bi-printer"></i>
+        </button>
+        <?php if (Auth::tienePermiso('mecanicos.editar')): ?>
+        <a href="<?= $appUrl ?>/?modulo=mecanicos&accion=nuevo" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i>Nuevo mecánico
+        </a>
+        <?php endif; ?>
+    </div>
 </div>
 
 <div class="card border-0 shadow-sm">
@@ -22,6 +31,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th>Foto</th>
                         <th>Nombre</th>
                         <th>Sucursal</th>
                         <th>Teléfono</th>
@@ -35,6 +45,10 @@
                     <?php foreach ($mecanicos as $m): ?>
                     <tr>
                         <td class="text-muted small"><?= $m['id'] ?></td>
+                        <td>
+                            <img src="<?= foto_o_avatar($m['foto'] ?? null, $m['nombre'], $appUrl, 80) ?>"
+                                 alt="" class="rounded-circle border" style="width:40px;height:40px;object-fit:cover">
+                        </td>
                         <td class="fw-semibold"><?= htmlspecialchars($m['nombre']) ?></td>
                         <td>
                             <span class="badge bg-secondary">

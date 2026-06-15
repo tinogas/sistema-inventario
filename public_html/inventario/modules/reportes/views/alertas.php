@@ -1,6 +1,14 @@
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h4 class="fw-bold mb-0"><i class="bi bi-exclamation-triangle text-warning me-2"></i>Alertas: Stock bajo mínimo</h4>
-    <span class="badge bg-danger fs-6"><?= count($datos) ?> productos</span>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-danger fs-6"><?= count($datos) ?> productos</span>
+        <?php if (!empty($datos)): ?>
+        <a href="<?= $appUrl ?>/?modulo=reportes&accion=pedido<?= !empty($_GET['sucursal_id']) ? '&sucursal_id='.(int)$_GET['sucursal_id'] : '' ?>"
+           class="btn btn-primary btn-sm" target="_blank">
+            <i class="bi bi-cart-plus me-1"></i> Generar pedido
+        </a>
+        <?php endif; ?>
+    </div>
 </div>
 
 <?php if (empty($datos)): ?>

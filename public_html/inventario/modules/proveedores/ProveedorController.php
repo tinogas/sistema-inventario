@@ -28,6 +28,30 @@ class ProveedorController extends Controller
         ));
     }
 
+    public function exportarCsv(): void
+    {
+        $this->requirePermiso('proveedores.ver');
+
+        $datos = $this->model->getAll();
+
+        if (empty($datos)) {
+            Session::flash('warning', 'No hay proveedores para exportar.');
+            $this->redirect('/?modulo=proveedores');
+        }
+
+        $filename = 'proveedores_' . date('Y-m-d') . '.csv';
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        $out = fopen('php://output', 'w');
+        fwrite($out, "\xEF\xBB\xBF");
+        fputcsv($out, array_keys($datos[0]), ';');
+        foreach ($datos as $fila) {
+            fputcsv($out, $fila, ';');
+        }
+        fclose($out);
+        exit;
+    }
+
     public function nuevo(): void
     {
         $this->requireAdmin();

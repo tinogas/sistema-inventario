@@ -1,5 +1,6 @@
 <?php
 require_once BASE_PATH . '/core/Controller.php';
+require_once BASE_PATH . '/core/Upload.php';
 require_once BASE_PATH . '/modules/usuarios/UsuarioModel.php';
 
 class UsuarioController extends Controller
@@ -40,6 +41,8 @@ class UsuarioController extends Controller
             'rol'         => ROL_CONSULTA,
             'sucursal_id' => '',
             'password'    => '',
+            'foto'        => null,
+            'activo'      => 1,
         ];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -52,6 +55,11 @@ class UsuarioController extends Controller
             $datos['password']    = $_POST['password'] ?? '';
 
             $errores = $this->validarDatos($datos, true);
+            try {
+                $datos['foto'] = Upload::imagen('foto', 'usuario');
+            } catch (RuntimeException $e) {
+                $errores[] = $e->getMessage();
+            }
 
             if (empty($errores)) {
                 $id = $this->model->crear($datos);
@@ -89,6 +97,8 @@ class UsuarioController extends Controller
             'rol'         => $usuario['rol'],
             'sucursal_id' => $usuario['sucursal_id'] ?? '',
             'password'    => '',
+            'foto'        => $usuario['foto'] ?? null,
+            'activo'      => $usuario['activo'] ?? 1,
         ];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -99,11 +109,22 @@ class UsuarioController extends Controller
             $datos['rol']         = $this->postStr('rol');
             $datos['sucursal_id'] = $this->postInt('sucursal_id');
             $datos['password']    = $_POST['password'] ?? '';
+            // No permitir que el admin se desactive a sí mismo
+            $datos['activo']      = ($id === (int)Auth::usuario()['id']) ? 1 : $this->postInt('activo', 0);
 
             $errores = $this->validarDatos($datos, false, $id);
+            try {
+                $datos['foto'] = Upload::imagen('foto', 'usuario', $usuario['foto'] ?? null);
+            } catch (RuntimeException $e) {
+                $errores[] = $e->getMessage();
+            }
 
             if (empty($errores)) {
                 $this->model->actualizar($id, $datos);
+                // Si el admin editó su propia foto, refrescar la sesión para el navbar
+                if ($id === (int) Auth::usuario()['id']) {
+                    Session::set('usuario_foto', $datos['foto']);
+                }
                 $this->auditoria('editar', 'usuarios', $id, "Usuario: {$datos['email']} rol: {$datos['rol']}");
                 Session::flash('success', 'Usuario actualizado correctamente.');
                 $this->redirect('/?modulo=usuarios');

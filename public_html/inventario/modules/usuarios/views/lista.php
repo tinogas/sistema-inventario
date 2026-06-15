@@ -20,6 +20,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th>Foto</th>
                         <th>Nombre</th>
                         <th>Correo electrónico</th>
                         <th>Rol</th>
@@ -37,6 +38,10 @@
                     ?>
                     <tr>
                         <td class="text-muted small"><?= $u['id'] ?></td>
+                        <td>
+                            <img src="<?= foto_o_avatar($u['foto'] ?? null, $u['nombre'], $appUrl, 80) ?>"
+                                 alt="" class="rounded-circle border" style="width:40px;height:40px;object-fit:cover">
+                        </td>
                         <td class="fw-semibold">
                             <?= htmlspecialchars($u['nombre']) ?>
                             <?php if ($esMismoCuenta): ?>
