@@ -1,0 +1,12 @@
+--Rol Almacenista -- Sucursal Nogales --
+Cuando el usuario es de Almacenista, en los traspasos deshabilitar su sucursal como destino. Ya esta elmensaje, pero evitemoslo.
+Cuando consultes el producto a traspasar, dejar la opciion de stock disponible deshabilitada.
+Porque solo tiene habilitados el catalogo de Productos?
+Si es almacenista, No expandir el Stock Actual ya que es de su misma Sucursal.
+En movimientos, en el filtro por sucursal, solo habilitar la de su usuario.
+
+--Rol Almacenista -- Matriz --
+Que no aparezcan los menus u opciones en la barra lateral a los que no tiene acceso o permiso.
+
+--Rol Admin --
+Donde habilitas en usuario si esta activo o no? No lo veo en el formulario.
