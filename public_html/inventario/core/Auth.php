@@ -72,6 +72,45 @@ class Auth
         return Session::get('usuario_rol') === ROL_ADMIN;
     }
 
+    // ---- Impersonación (solo admin puede usarla) ----
+
+    public static function estaImpersonando(): bool
+    {
+        return (bool) Session::get('_impersonando');
+    }
+
+    public static function iniciarImpersonacion(array $target): void
+    {
+        Session::set('_imp_id',     Session::get('usuario_id'));
+        Session::set('_imp_nombre', Session::get('usuario_nombre'));
+        Session::set('_imp_email',  Session::get('usuario_email'));
+        Session::set('_imp_foto',   Session::get('usuario_foto'));
+        Session::set('_impersonando', true);
+
+        Session::set('usuario_id',         $target['id']);
+        Session::set('usuario_nombre',      $target['nombre']);
+        Session::set('usuario_email',       $target['email']);
+        Session::set('usuario_rol',         $target['rol']);
+        Session::set('usuario_sucursal_id', $target['sucursal_id'] ?? null);
+        Session::set('usuario_foto',        $target['foto'] ?? null);
+    }
+
+    public static function terminarImpersonacion(): void
+    {
+        Session::set('usuario_id',         Session::get('_imp_id'));
+        Session::set('usuario_nombre',      Session::get('_imp_nombre'));
+        Session::set('usuario_email',       Session::get('_imp_email'));
+        Session::set('usuario_rol',         ROL_ADMIN);
+        Session::set('usuario_sucursal_id', null);
+        Session::set('usuario_foto',        Session::get('_imp_foto'));
+
+        Session::delete('_impersonando');
+        Session::delete('_imp_id');
+        Session::delete('_imp_nombre');
+        Session::delete('_imp_email');
+        Session::delete('_imp_foto');
+    }
+
     // Devuelve el ID de sucursal que debe aplicarse en los queries
     // Admin: el que esté seleccionado en ?sucursal_id= (o null para todas)
     // Almacenista/Consulta: siempre su sucursal asignada

@@ -21,7 +21,8 @@ Manual para el personal del taller. Explica, paso a paso y sin tecnicismos, cóm
 16. Pedido de reabastecimiento
 17. Respaldos de la base de datos
 18. Base de datos (datos de ejemplo / empezar de cero)
-19. Preguntas frecuentes
+19. Impersonación de usuarios (Usar como)
+20. Preguntas frecuentes
 
 ---
 
@@ -37,15 +38,19 @@ Sistema de control de inventario multi-sucursal: productos, entradas, salidas, t
 | | Administrador | Almacenista | Consulta |
 |--|:--:|:--:|:--:|
 | Dashboard / Productos / Reportes | ✓ | ✓ | ✓ (ver) |
+| Proveedores, Mecánicos, Servicios, Categorías, Unidades | ✓ | ✓ (ver) | — |
 | Entradas, Salidas, Traspasos, Facturas | ✓ | ✓ | — |
 | Editar productos / mecánicos | ✓ | ✓ | — |
 | Sucursales, Usuarios, Empresa, Respaldos, Base de datos | ✓ | — | — |
-| Cambiar entre sucursales | ✓ | — | — |
+| Cambiar entre sucursales / ver todas | ✓ | — | — |
+| Impersonar usuarios ("Usar como") | ✓ | — | — |
+
+El **menú lateral muestra solo las secciones a las que el rol tiene acceso**. Un usuario *consulta* únicamente verá Dashboard, Productos y Reportes; un almacenista verá todo excepto la sección Administración.
 
 ## 4. La pantalla principal
-- **Barra superior:** botón de menú, nombre del sistema, **selector de sucursal** (solo admin; incluye "Todas las sucursales"), campana de **alertas**, y su **foto** con el menú de usuario.
-- **Menú lateral:** Inventario, Catálogos, Reportes y (admin) Administración — incluye **Respaldos BD** y **Base de datos**.
-- **Dashboard:** indicadores, gráfica de movimientos de 7 días (entradas, salidas, traspasos, facturas), stock bajo mínimo y últimas actividades.
+- **Barra superior:** botón de menú, nombre del sistema, **selector de sucursal** (solo admin; incluye "Todas las sucursales"), campana de **alertas**, y su **foto** con el menú de usuario (incluye "Usar como…" para admins).
+- **Menú lateral:** muestra únicamente las secciones que el rol puede acceder. Inventario, Catálogos, Reportes y (solo admin) Administración.
+- **Dashboard:** indicadores, fecha en español, gráfica de movimientos de 7 días (entradas, salidas, traspasos, facturas), stock bajo mínimo y últimas actividades.
 
 ## 5. Fotos (usuarios, mecánicos, sucursales)
 En los formularios de usuario, mecánico y sucursal hay un campo **Foto**:
@@ -121,7 +126,26 @@ Para **restaurar**, importe el `.sql` desde phpMyAdmin.
 - **Vaciar base de datos:** deja el sistema limpio para empezar de cero, **conservando su usuario administrador** y los catálogos base (sucursales, categorías, unidades). Confirme escribiendo **VACIAR**.
 - Abajo se ve el **conteo de registros** por tabla.
 
-## 19. Preguntas frecuentes
+## 19. Impersonación de usuarios (Usar como)
+Función exclusiva para administradores que permite "ponerse en los zapatos" de cualquier otro usuario para ver exactamente cómo opera el sistema con su rol y sucursal.
+
+**Cómo activarla:**
+1. Haz clic en tu nombre (arriba a la derecha) → **Usar como…**
+2. Se abre un panel con todos los usuarios activos (almacenistas y consultas). Usa el buscador para filtrar.
+3. Pulsa el botón de flecha junto al usuario que quieres impersonar.
+4. El sistema carga con su sesión completa (rol, sucursal, menú limitado).
+
+**Mientras impersonas:**
+- Una **barra naranja fija** en la parte superior muestra "Actuando como: [nombre] · [rol]".
+- El botón **Volver Admin** (en la barra o en el menú de usuario) restaura tu sesión de administrador.
+- El sistema se comporta exactamente como si ese usuario hubiera iniciado sesión: muestra su sucursal, sus permisos y sus vistas.
+
+**Notas:**
+- No se puede impersonar a otro administrador.
+- Hacer logout durante la impersonación cierra la sesión completa (no regresa al admin automáticamente).
+- Esta función no queda registrada en la auditoría del usuario impersonado; las acciones que realices se registran con el ID del usuario impersonado.
+
+## 20. Preguntas frecuentes
 - **No veo la foto que subí / veo una foto vieja:** pulse **Ctrl+F5** una vez (caché del navegador).
 - **El stock para salida es menor al físico:** hay unidades **en tránsito** (en un traspaso sin recibir).
 - **Un traspaso "regresó" stock:** se recibió menos de lo enviado; la diferencia volvió al origen.

@@ -63,7 +63,7 @@ class UsuarioModel extends Model
             $this->execute(
                 'UPDATE usuarios
                  SET nombre = :nombre, email = :email, password_hash = :hash,
-                     rol = :rol, sucursal_id = :sucursal_id, foto = :foto
+                     rol = :rol, sucursal_id = :sucursal_id, foto = :foto, activo = :activo
                  WHERE id = :id',
                 [
                     ':nombre'      => $datos['nombre'],
@@ -72,6 +72,7 @@ class UsuarioModel extends Model
                     ':rol'         => $datos['rol'],
                     ':sucursal_id' => ($datos['sucursal_id'] > 0) ? (int)$datos['sucursal_id'] : null,
                     ':foto'        => $datos['foto'] ?? null,
+                    ':activo'      => isset($datos['activo']) ? (int)$datos['activo'] : 1,
                     ':id'          => $id,
                 ]
             );
@@ -79,7 +80,7 @@ class UsuarioModel extends Model
             $this->execute(
                 'UPDATE usuarios
                  SET nombre = :nombre, email = :email,
-                     rol = :rol, sucursal_id = :sucursal_id, foto = :foto
+                     rol = :rol, sucursal_id = :sucursal_id, foto = :foto, activo = :activo
                  WHERE id = :id',
                 [
                     ':nombre'      => $datos['nombre'],
@@ -87,6 +88,7 @@ class UsuarioModel extends Model
                     ':rol'         => $datos['rol'],
                     ':sucursal_id' => ($datos['sucursal_id'] > 0) ? (int)$datos['sucursal_id'] : null,
                     ':foto'        => $datos['foto'] ?? null,
+                    ':activo'      => isset($datos['activo']) ? (int)$datos['activo'] : 1,
                     ':id'          => $id,
                 ]
             );

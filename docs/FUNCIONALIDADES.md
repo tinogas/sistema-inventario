@@ -46,7 +46,7 @@ CRUD con baja lógica. Servicios pueden asociar productos (insumos) mediante un 
 
 ## 10. Administración
 - **Sucursales**: CRUD + foto + ubicación en mapa.
-- **Usuarios**: CRUD + rol + sucursal + foto (la sucursal no aplica a admin).
+- **Usuarios**: CRUD + rol + sucursal + foto + **campo "Cuenta activa"** (al editar, el admin puede activar/desactivar la cuenta; el admin no puede desactivarse a sí mismo).
 - **Empresa**: datos fiscales (nombre, RFC, dirección, ciudad, CP, teléfono, email, pie de factura) usados en impresiones.
 - **Respaldos (Backups)**: generar respaldo `.sql` completo, **historial/log** (tamaño, tablas, registros, usuario, estado), **descargar** y **eliminar**. Restauración: importar el `.sql` en phpMyAdmin.
 - **Base de datos**: 
@@ -57,3 +57,7 @@ CRUD con baja lógica. Servicios pueden asociar productos (insumos) mediante un 
 
 ## 11. Seguridad y trazabilidad
 Login con sesión segura y CSRF; permisos por rol; **auditoría** de acciones; cabeceras anti-caché; cookies `HttpOnly`/`SameSite`. Las carpetas `uploads/`, `backups/` y `data/` tienen protección.
+
+**Sidebar condicional**: cada enlace del menú lateral se renderiza únicamente si `Auth::tienePermiso()` lo permite; los roles no ven opciones que no pueden usar.
+
+**Impersonación de usuarios** (solo admin): el administrador puede asumir temporalmente la sesión de cualquier usuario no-admin desde "Usar como…" en el navbar. La sesión original se guarda en variables de sesión con prefijo `_imp_*`; el flujo de restauración es `Auth::terminarImpersonacion()`. Una barra naranja fija indica el estado de impersonación. No se puede impersonar a otro admin ni iniciar una impersonación mientras otra está activa.

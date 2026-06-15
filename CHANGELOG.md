@@ -2,6 +2,21 @@
 
 Todas las mejoras y correcciones relevantes del sistema.
 
+## 2026-06 — Impersonación de usuarios, UX por rol y correcciones de testeo
+
+### Nuevas funcionalidades
+- **Impersonación de usuarios** (solo admin): desde el menú de usuario del navbar, el administrador puede elegir "Usar como…" para operar el sistema con la sesión de cualquier almacenista o usuario consulta. Mientras está activa, una barra naranja fija indica el usuario impersonado y el rol. El botón "Volver Admin" (en la barra y en el dropdown) restaura la sesión original. Implementado con tres métodos en `Auth` (`estaImpersonando`, `iniciarImpersonacion`, `terminarImpersonacion`) y dos acciones en `AuthController` (`impersonar`, `terminarImpersonacion`).
+- **Sidebar condicional por rol**: cada elemento del menú lateral aparece solo si el rol tiene el permiso correspondiente (`Auth::tienePermiso()`). El usuario *consulta* ve únicamente Dashboard, Productos y Reportes; el almacenista ve todo excepto la sección Administración.
+- **Campo "Cuenta activa"** en la edición de usuarios: el administrador puede activar/desactivar una cuenta directamente desde el formulario (sin necesidad de usar la baja lógica). El admin no puede desactivarse a sí mismo.
+- **Fecha en español**: el encabezado del Dashboard muestra la fecha en castellano ("Lunes, 16 de junio de 2026").
+
+### Correcciones (testeo por rol)
+- **Traspasos / almacenista**: la sucursal propia del almacenista aparece deshabilitada en el selector de destino (antes solo mostraba un mensaje al intentar seleccionarla). El campo "Stock disponible" es ahora visualmente no editable (`disabled`).
+- **Reporte de stock / almacenista**: se ocultan el botón "Expandir todo" y los toggles individuales (+/−) porque el almacenista ya ve únicamente su sucursal y el desglose no añade información.
+- **Movimientos / almacenista**: el filtro por sucursal muestra solo la del usuario (campo bloqueado con `hidden` + texto deshabilitado); el admin mantiene el selector completo.
+
+---
+
 ## 2026-06 — Fotos, mantenimiento de BD y mejoras de operación
 
 ### Nuevas funcionalidades

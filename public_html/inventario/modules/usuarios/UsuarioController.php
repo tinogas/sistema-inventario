@@ -42,6 +42,7 @@ class UsuarioController extends Controller
             'sucursal_id' => '',
             'password'    => '',
             'foto'        => null,
+            'activo'      => 1,
         ];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -97,6 +98,7 @@ class UsuarioController extends Controller
             'sucursal_id' => $usuario['sucursal_id'] ?? '',
             'password'    => '',
             'foto'        => $usuario['foto'] ?? null,
+            'activo'      => $usuario['activo'] ?? 1,
         ];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -107,6 +109,8 @@ class UsuarioController extends Controller
             $datos['rol']         = $this->postStr('rol');
             $datos['sucursal_id'] = $this->postInt('sucursal_id');
             $datos['password']    = $_POST['password'] ?? '';
+            // No permitir que el admin se desactive a sí mismo
+            $datos['activo']      = ($id === (int)Auth::usuario()['id']) ? 1 : $this->postInt('activo', 0);
 
             $errores = $this->validarDatos($datos, false, $id);
             try {

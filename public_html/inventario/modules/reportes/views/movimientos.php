@@ -11,12 +11,20 @@
     <input type="hidden" name="accion" value="movimientos">
     <div class="col-md-2">
         <label class="form-label small">Sucursal</label>
+        <?php if (Auth::esAdmin()): ?>
         <select name="sucursal_id" class="form-select form-select-sm">
             <option value="">Todas</option>
             <?php foreach ($sucursales as $s): ?>
             <option value="<?= $s['id'] ?>" <?= (int)$sucursal_id === (int)$s['id'] ? 'selected' : '' ?>><?= htmlspecialchars($s['nombre']) ?></option>
             <?php endforeach; ?>
         </select>
+        <?php else:
+            $miSuc = array_values(array_filter($sucursales, fn($s) => (int)$s['id'] === (int)Auth::sucursalActual()));
+            $miSucNombre = $miSuc[0]['nombre'] ?? 'Mi sucursal';
+        ?>
+        <input type="hidden" name="sucursal_id" value="<?= (int)Auth::sucursalActual() ?>">
+        <input type="text" class="form-control form-control-sm" value="<?= htmlspecialchars($miSucNombre) ?>" disabled>
+        <?php endif; ?>
     </div>
     <div class="col-md-2">
         <label class="form-label small">Tipo</label>

@@ -1,6 +1,11 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="fw-bold mb-0"><i class="bi bi-speedometer2 me-2 text-warning"></i>Dashboard</h4>
-    <span class="text-muted small"><?= date('l, d \d\e F \d\e Y') ?></span>
+    <?php
+    $diasEs  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    $mesesEs = ['','enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    $fechaEs = $diasEs[(int)date('w')] . ', ' . date('j') . ' de ' . $mesesEs[(int)date('n')] . ' de ' . date('Y');
+    ?>
+    <span class="text-muted small"><?= $fechaEs ?></span>
 </div>
 
 <!-- KPIs -->

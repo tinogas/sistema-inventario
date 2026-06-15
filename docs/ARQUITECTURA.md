@@ -80,6 +80,43 @@ Clase estática con tabla de rutas `modulo → [clase, archivo]`. Módulos regis
 - **`Auth`**: `intentarLogin()` (guarda en sesión `usuario_id/nombre/email/rol/sucursal_id/`**`foto`**), `logout()`, `usuario()` (incluye `foto`), `tienePermiso()`, `esAdmin()`.
 - **Roles**: `admin` (comodín `*`), `almacenista`, `consulta`. Mapa `PERMISOS` en `config/app.php`.
 - **Sucursal**: `sucursalFiltro()` (admin = `?sucursal_id=` o todas; otros = la suya) y `sucursalActual()`.
+- **Sidebar condicional**: `shared/views/layout.php` envuelve cada enlace en `Auth::tienePermiso()` para que solo aparezcan las secciones accesibles al rol activo.
+
+### Impersonación de usuarios
+
+Permite que el admin opere el sistema como otro usuario sin hacer logout. Solo disponible si `usuario_rol === 'admin'` **y no hay impersonación activa** (protege contra encadenamiento).
+
+```
+Admin pulsa "Usar como [usuario]"
+  → POST ?modulo=auth&accion=impersonar  (CSRF)
+  → AuthController::impersonar()
+       validar: rol=admin, !estaImpersonando(), target no-admin, activo
+       Auth::iniciarImpersonacion($target)
+           guarda _imp_id/nombre/email/foto en sesión
+           reemplaza usuario_* con datos del target
+           Session::set('_impersonando', true)
+  → redirect dashboard  (ya con la sesión del target)
+
+Usuario impersonado pulsa "Volver Admin"
+  → POST ?modulo=auth&accion=terminar_impersonacion (CSRF)
+  → AuthController::terminarImpersonacion()
+       Auth::terminarImpersonacion()
+           restaura usuario_* desde _imp_*
+           fuerza usuario_rol = ROL_ADMIN
+           Session::delete('_impersonando') + claves _imp_*
+  → redirect dashboard  (sesión de admin restaurada)
+```
+
+Variables de sesión durante impersonación:
+
+| Clave | Contenido |
+|-------|-----------|
+| `_impersonando` | `true` |
+| `_imp_id` | ID del admin original |
+| `_imp_nombre/email/foto` | Datos del admin original |
+| `usuario_*` | Datos del usuario impersonado |
+
+La barra naranja fija en el layout (`position:fixed; top:56px`) es visible con CSS ajustado (`top:96px` para sidebar/main-content). Se renderiza solo cuando `Auth::estaImpersonando()` es `true`.
 
 ---
 

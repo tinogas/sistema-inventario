@@ -28,12 +28,15 @@ foreach ($datos as $fila) {
 $transito = $transito ?? [];
 ?>
 
+<?php $esAdmin = Auth::esAdmin(); ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="fw-bold mb-0"><i class="bi bi-table text-primary me-2"></i>Stock actual</h4>
     <div class="d-flex gap-2">
+        <?php if ($esAdmin): ?>
         <button type="button" id="btnExpandAll" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrows-expand me-1"></i>Expandir todo
         </button>
+        <?php endif; ?>
         <a href="?modulo=reportes&accion=stock&<?= http_build_query(array_filter(['sucursal_id'=>$sucursal_id,'categoria_id'=>$categoria,'buscar'=>$buscar,'exportar_xlsx'=>1])) ?>"
            class="btn btn-outline-success btn-sm">
             <i class="bi bi-file-earmark-excel me-1"></i>Exportar XLSX
@@ -76,7 +79,7 @@ $transito = $transito ?? [];
             <table class="table table-sm table-hover mb-0" id="tablaStock">
                 <thead class="table-light">
                     <tr>
-                        <th style="width:2rem"></th>
+                        <?php if ($esAdmin): ?><th style="width:2rem"></th><?php endif; ?>
                         <th>Código</th>
                         <th>Producto</th>
                         <th>Categoría</th>
@@ -99,6 +102,7 @@ $transito = $transito ?? [];
                 ?>
                 <!-- Fila principal del producto -->
                 <tr class="<?= $bajo ? 'table-warning' : '' ?> align-middle">
+                    <?php if ($esAdmin): ?>
                     <td class="text-center">
                         <?php if ($hasDet): ?>
                         <button class="btn btn-link btn-sm p-0 text-secondary toggle-row"
@@ -111,6 +115,7 @@ $transito = $transito ?? [];
                         </button>
                         <?php endif; ?>
                     </td>
+                    <?php endif; ?>
                     <td><code><?= htmlspecialchars($p['codigo']) ?></code></td>
                     <td>
                         <a href="<?= $appUrl ?>/?modulo=productos&accion=detalle&id=<?= $p['id'] ?>"
@@ -141,7 +146,7 @@ $transito = $transito ?? [];
                 $trFilas = $transito[$p['id']] ?? [];
                 $hasRows = $hasSuc || !empty($trFilas);
                 ?>
-                <?php if ($hasRows): ?>
+                <?php if ($esAdmin && $hasRows): ?>
                 <!-- Detalle por sucursal + en tránsito (collapse) -->
                 <tr class="collapse" id="<?= $colId ?>">
                     <td colspan="8" class="p-0 border-0">

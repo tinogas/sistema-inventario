@@ -33,7 +33,10 @@
             <select name="sucursal_dest_id" class="form-select" id="selDestino" required>
                 <option value="">— Seleccionar —</option>
                 <?php foreach ($sucursales as $s): ?>
-                <option value="<?= $s['id'] ?>"><?= htmlspecialchars($s['nombre']) ?></option>
+                <option value="<?= $s['id'] ?>"
+                    <?= (!Auth::esAdmin() && (int)$s['id'] === (int)Auth::sucursalActual()) ? 'disabled' : '' ?>>
+                    <?= htmlspecialchars($s['nombre']) ?>
+                </option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -68,7 +71,7 @@
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold">Stock disponible</label>
-                    <input type="text" id="inputStock" class="form-control text-end" value="—" readonly
+                    <input type="text" id="inputStock" class="form-control text-end" value="—" disabled
                            title="Stock disponible (entre paréntesis aparece cuánto hay en tránsito en otros traspasos)">
                 </div>
                 <div class="col-md-2">

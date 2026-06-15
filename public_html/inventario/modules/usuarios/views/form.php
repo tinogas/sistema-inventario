@@ -144,6 +144,18 @@
                 </select>
             </div>
 
+            <!-- Activo (solo en edición) -->
+            <?php if (isset($id)): ?>
+            <div class="mb-4">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="activo" name="activo" value="1"
+                           <?= ($datos['activo'] ?? 1) ? 'checked' : '' ?>>
+                    <label class="form-check-label fw-semibold" for="activo">Cuenta activa</label>
+                </div>
+                <div class="form-text">Si se desactiva, el usuario no podrá iniciar sesión.</div>
+            </div>
+            <?php endif; ?>
+
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-check-lg me-1"></i>
