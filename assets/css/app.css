@@ -1,0 +1,174 @@
+/* ============================================================
+   Inventario Taller — Estilos principales
+   ============================================================ */
+
+:root {
+    --sidebar-width: 240px;
+    --navbar-height: 56px;
+    --color-primary: #f59e0b;
+    --color-sidebar-bg: #1e2a3a;
+    --color-sidebar-text: #cbd5e1;
+    --color-sidebar-active: #f59e0b;
+}
+
+body {
+    background: #f1f5f9;
+    font-size: .925rem;
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+    position: fixed;
+    top: var(--navbar-height);
+    left: 0;
+    width: var(--sidebar-width);
+    height: calc(100vh - var(--navbar-height));
+    background: var(--color-sidebar-bg);
+    overflow-y: auto;
+    transition: transform .25s ease;
+    z-index: 1030;
+    padding-bottom: 2rem;
+}
+
+.sidebar.collapsed {
+    transform: translateX(calc(-1 * var(--sidebar-width)));
+}
+
+.sidebar-nav {
+    padding: .75rem 0;
+}
+
+.sidebar-section {
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #64748b;
+    padding: .5rem 1.2rem .25rem;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .5rem 1.2rem;
+    color: var(--color-sidebar-text);
+    text-decoration: none;
+    font-size: .875rem;
+    transition: background .15s, color .15s;
+    border-left: 3px solid transparent;
+}
+
+.sidebar-link:hover {
+    background: rgba(255,255,255,.06);
+    color: #fff;
+}
+
+.sidebar-link.active {
+    background: rgba(245,158,11,.12);
+    color: var(--color-sidebar-active);
+    border-left-color: var(--color-sidebar-active);
+    font-weight: 600;
+}
+
+/* ---- Contenido principal ---- */
+.main-content {
+    margin-left: var(--sidebar-width);
+    margin-top: var(--navbar-height);
+    padding: 1.5rem;
+    transition: margin-left .25s ease;
+    min-height: calc(100vh - var(--navbar-height));
+}
+
+.main-content.expanded {
+    margin-left: 0;
+}
+
+/* ---- Cards de KPI ---- */
+.kpi-card {
+    border: none;
+    border-radius: .75rem;
+    padding: 1.25rem 1.5rem;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.kpi-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: .6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.kpi-icon.amber  { background: #fef3c7; color: #d97706; }
+.kpi-icon.green  { background: #dcfce7; color: #16a34a; }
+.kpi-icon.red    { background: #fee2e2; color: #dc2626; }
+.kpi-icon.blue   { background: #dbeafe; color: #2563eb; }
+.kpi-icon.purple { background: #ede9fe; color: #7c3aed; }
+
+.kpi-value { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+.kpi-label { font-size: .78rem; color: #64748b; margin-top: .15rem; }
+
+/* ---- Tabla ---- */
+.table-hover tbody tr:hover { background: #f8fafc; }
+
+/* ---- Badge de estado ---- */
+.badge-estado-confirmado  { background: #dcfce7; color: #166534; }
+.badge-estado-borrador    { background: #fef9c3; color: #854d0e; }
+.badge-estado-cancelado   { background: #fee2e2; color: #991b1b; }
+.badge-estado-en_transito { background: #dbeafe; color: #1e40af; }
+.badge-estado-recibido    { background: #dcfce7; color: #166534; }
+
+/* ---- Escáner input ---- */
+.escaner-wrap {
+    position: relative;
+}
+
+.escaner-wrap .escaner-icon {
+    position: absolute;
+    right: .75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 1.2rem;
+    pointer-events: none;
+}
+
+#input-escaner:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 .2rem rgba(245,158,11,.25);
+}
+
+/* ---- Tabla de partidas (entradas/salidas) ---- */
+.tabla-partidas th { font-size: .78rem; text-transform: uppercase; letter-spacing:.05em; }
+.tabla-partidas .btn-quitar { padding: .15rem .4rem; font-size: .8rem; }
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(calc(-1 * var(--sidebar-width)));
+    }
+    .sidebar.open {
+        transform: translateX(0);
+    }
+    .main-content {
+        margin-left: 0;
+    }
+}
+
+/* ---- Utilidades ---- */
+.text-truncate-150 {
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cursor-pointer { cursor: pointer; }

@@ -1,0 +1,153 @@
+<?php
+require_once BASE_PATH . '/core/Controller.php';
+require_once BASE_PATH . '/modules/salidas/SalidaModel.php';
+
+class SalidaController extends Controller
+{
+    private SalidaModel $model;
+
+    public function __construct()
+    {
+        $this->model = new SalidaModel();
+    }
+
+    public function index(): void
+    {
+        $this->requirePermiso('salidas.ver');
+
+        $sucursal_id = Auth::sucursalFiltro();
+        $buscar      = $this->getStr('buscar');
+        $pagina      = max(1, $this->getInt('pagina', 1));
+
+        $resultado = $this->model->listar($sucursal_id, $buscar, $pagina);
+
+        $titulo    = 'Salidas de inventario';
+        $vistaPath = BASE_PATH . '/modules/salidas/views/lista.php';
+        $this->render('salidas/lista', compact('titulo','resultado','buscar','vistaPath'));
+    }
+
+    public function nueva(): void
+    {
+        $this->requirePermiso('salidas.crear');
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->validarCsrf();
+
+            $sucursalId = $this->postInt('sucursal_id') ?: (int) Auth::sucursalActual();
+            // Verificar que la sucursal existe y está activa
+            $db  = Database::getInstance();
+            $chk = $db->prepare('SELECT id FROM sucursales WHERE id = ? AND activa = 1');
+            $chk->execute([$sucursalId]);
+            if (!$chk->fetchColumn()) {
+                Session::flash('error', 'Sucursal no válida.');
+                $this->redirect('/?modulo=salidas&accion=nueva');
+                return;
+            }
+            $datos = [
+                'sucursal_id'        => $sucursalId,
+                'mecanico_id'        => $this->postInt('mecanico_id') ?: null,
+                'servicio_id'        => $this->postInt('servicio_id') ?: null,
+                'referencia_factura' => $this->postStr('referencia_factura'),
+                'notas'              => $this->postStr('notas'),
+                'usuario_id'         => Auth::usuario()['id'],
+            ];
+
+            $forzar     = isset($_POST['forzar_stock']) && Auth::tienePermiso('salidas.forzar');
+            $productoIds = $_POST['producto_id']     ?? [];
+            $cantidades  = $_POST['cantidad']         ?? [];
+            $precios     = $_POST['precio_unitario']  ?? [];
+
+            $partidas = [];
+            foreach ($productoIds as $i => $pid) {
+                $pid = (int) $pid;
+                $qty = (float) str_replace(',','.', $cantidades[$i] ?? 0);
+                $prc = (float) str_replace(',','.', $precios[$i]    ?? 0);
+                if ($pid > 0 && $qty > 0) {
+                    $partidas[] = ['producto_id' => $pid, 'cantidad' => $qty, 'precio_unitario' => $prc];
+                }
+            }
+
+            try {
+                $id = $this->model->confirmar($datos, $partidas, $forzar);
+                $nota = $forzar ? ' (stock forzado)' : '';
+                $this->auditoria('confirmar_salida' . ($forzar?'_forzada':''), 'movimientos', $id);
+                Session::flash('success', 'Salida registrada correctamente.' . $nota);
+                $this->redirect('/?modulo=salidas&accion=detalle&id=' . $id);
+            } catch (RuntimeException $e) {
+                Session::flash('error', $e->getMessage());
+            }
+        }
+
+        $db        = Database::getInstance();
+        $sucId     = Auth::sucursalActual();
+        $sucursales = $db->query('SELECT id, nombre FROM sucursales WHERE activa=1 ORDER BY nombre')->fetchAll();
+        $mecanicos  = $db->prepare(
+            'SELECT id, nombre FROM mecanicos WHERE activo=1' .
+            ($sucId ? ' AND sucursal_id = ?' : '') . ' ORDER BY nombre'
+        );
+        $sucId ? $mecanicos->execute([$sucId]) : $mecanicos->execute([]);
+        $mecanicos = $mecanicos->fetchAll();
+
+        $servicios = $db->query('SELECT id, nombre FROM servicios WHERE activo=1 ORDER BY nombre')->fetchAll();
+
+        // Precarga opcional desde el detalle de un producto (?producto_id=&sucursal_id=)
+        $precargaCodigo   = '';
+        $precargaSucursal = $this->getInt('sucursal_id');
+        $pid = $this->getInt('producto_id');
+        if ($pid > 0) {
+            $st = $db->prepare('SELECT codigo FROM productos WHERE id = ? AND activo = 1');
+            $st->execute([$pid]);
+            $precargaCodigo = (string) ($st->fetchColumn() ?: '');
+        }
+
+        $titulo    = 'Nueva salida';
+        $vistaPath = BASE_PATH . '/modules/salidas/views/nueva.php';
+        $this->render('salidas/nueva', compact('titulo','sucursales','mecanicos','servicios','vistaPath','precargaCodigo','precargaSucursal'));
+    }
+
+    public function detalle(): void
+    {
+        $this->requirePermiso('salidas.ver');
+        $id = $this->getInt('id');
+
+        $salida = $this->model->getById($id);
+        if (!$salida) {
+            Session::flash('error', 'Salida no encontrada.');
+            $this->redirect('/?modulo=salidas');
+        }
+
+        $partidas  = $this->model->getDetalle($id);
+        $titulo    = 'Detalle salida ' . $salida['folio'];
+        $vistaPath = BASE_PATH . '/modules/salidas/views/detalle.php';
+        $this->render('salidas/detalle', compact('titulo','salida','partidas','vistaPath'));
+    }
+
+    public function cancelar(): void
+    {
+        $this->requirePermiso('salidas.cancelar');
+        $this->validarCsrf();
+
+        $id     = $this->postInt('id');
+        $salida = $this->model->getById($id);
+
+        if (!$salida) {
+            Session::flash('error', 'Salida no encontrada.');
+            $this->redirect('/?modulo=salidas');
+            return;
+        }
+        if ($salida['estado'] !== 'confirmado') {
+            Session::flash('error', 'Solo se pueden cancelar salidas en estado confirmado.');
+            $this->redirect('/?modulo=salidas&accion=detalle&id=' . $id);
+            return;
+        }
+
+        try {
+            $this->model->cancelarMovimiento($id, $salida['sucursal_id']);
+            $this->auditoria('cancelar_salida', 'movimientos', $id);
+            Session::flash('success', 'Salida cancelada y stock revertido.');
+        } catch (RuntimeException $e) {
+            Session::flash('error', $e->getMessage());
+        }
+        $this->redirect('/?modulo=salidas&accion=detalle&id=' . $id);
+    }
+}
