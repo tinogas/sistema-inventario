@@ -6,7 +6,6 @@ $qFiltros = array_filter([
     'unidad_id'   => $filtros['unidad_id']   ?: '',
     'fecha_desde' => $filtros['fecha_desde'],
     'fecha_hasta' => $filtros['fecha_hasta'],
-    'placas'      => $filtros['placas'],
     'mecanico_id' => $filtros['mecanico_id'] ?: '',
     'folio'       => $filtros['folio'],
 ], fn($v) => $v !== '' && $v !== null);
@@ -25,9 +24,6 @@ $qBase = http_build_query($qFiltros);
 <!-- Filtros -->
 <form method="GET" action="<?= $appUrl ?>/" class="mb-3">
     <input type="hidden" name="modulo" value="bitacoras">
-    <?php if ($filtros['unidad_id']): ?>
-    <input type="hidden" name="unidad_id" value="<?= (int)$filtros['unidad_id'] ?>">
-    <?php endif; ?>
 
     <div class="card shadow-sm mb-3">
         <div class="card-body py-2 px-3">
@@ -46,7 +42,7 @@ $qBase = http_build_query($qFiltros);
                 <!-- Cliente (select) -->
                 <div class="col-12 col-md-3">
                     <label class="form-label small fw-semibold mb-1">Cliente</label>
-                    <select name="cliente_id" class="form-select form-select-sm">
+                    <select id="filtro_cliente_id" name="cliente_id" class="form-select form-select-sm">
                         <option value="">— Todos —</option>
                         <?php foreach ($clientes as $c): ?>
                         <option value="<?= $c['id'] ?>"
@@ -56,6 +52,13 @@ $qBase = http_build_query($qFiltros);
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <!-- Unidad (dinámico según cliente) -->
+                <div class="col-12 col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Unidad</label>
+                    <select id="filtro_unidad_id" name="unidad_id" class="form-select form-select-sm">
+                        <option value="">— Todas —</option>
+                    </select>
+                </div>
                 <!-- Folio -->
                 <div class="col-6 col-md-2">
                     <label class="form-label small fw-semibold mb-1">Folio</label>
@@ -63,15 +66,8 @@ $qBase = http_build_query($qFiltros);
                            placeholder="FAC-…"
                            value="<?= htmlspecialchars($filtros['folio'] ?? '') ?>">
                 </div>
-                <!-- Placas -->
-                <div class="col-6 col-md-2">
-                    <label class="form-label small fw-semibold mb-1">Placas</label>
-                    <input type="text" name="placas" class="form-control form-control-sm"
-                           placeholder="ABC-1234"
-                           value="<?= htmlspecialchars($filtros['placas'] ?? '') ?>">
-                </div>
                 <!-- Mecánico -->
-                <div class="col-12 col-md-3">
+                <div class="col-12 col-md-2">
                     <label class="form-label small fw-semibold mb-1">Mecánico</label>
                     <select name="mecanico_id" class="form-select form-select-sm">
                         <option value="">— Todos —</option>
@@ -192,3 +188,29 @@ $qBase = http_build_query($qFiltros);
     </div>
     <?php endif; ?>
 </div>
+
+<script>
+(function () {
+    const unidades = <?= json_encode(array_values($unidades_all)) ?>;
+    const selCliente = document.getElementById('filtro_cliente_id');
+    const selUnidad  = document.getElementById('filtro_unidad_id');
+    const currentUnidad = <?= (int)($filtros['unidad_id'] ?? 0) ?>;
+
+    function poblarUnidades(clienteId) {
+        selUnidad.innerHTML = '<option value="">— Todas —</option>';
+        if (!clienteId) return;
+        unidades
+            .filter(u => u.cliente_id == clienteId)
+            .forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = u.marca + ' ' + u.modelo + (u.placas ? ' — ' + u.placas : '');
+                if (u.id == currentUnidad) opt.selected = true;
+                selUnidad.appendChild(opt);
+            });
+    }
+
+    poblarUnidades(selCliente.value);
+    selCliente.addEventListener('change', function () { poblarUnidades(this.value); });
+})();
+</script>

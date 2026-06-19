@@ -20,7 +20,6 @@ class BitacoraController extends Controller
             'unidad_id'   => $this->getInt('unidad_id')   ?: null,
             'fecha_desde' => $this->getStr('fecha_desde'),
             'fecha_hasta' => $this->getStr('fecha_hasta'),
-            'placas'      => $this->getStr('placas'),
             'mecanico_id' => $this->getInt('mecanico_id') ?: null,
             'folio'       => $this->getStr('folio'),
         ];
@@ -36,15 +35,16 @@ class BitacoraController extends Controller
             $clienteNombre = $cl['nombre'] ?? '';
         }
 
-        $db        = \Database::getInstance();
-        $mecanicos = $db->query('SELECT id, nombre FROM mecanicos WHERE activo=1 ORDER BY nombre')->fetchAll();
-        $clientes  = $db->query('SELECT id, nombre FROM clientes WHERE activo=1 ORDER BY nombre')->fetchAll();
+        $db          = \Database::getInstance();
+        $mecanicos   = $db->query('SELECT id, nombre FROM mecanicos WHERE activo=1 ORDER BY nombre')->fetchAll();
+        $clientes    = $db->query('SELECT id, nombre FROM clientes WHERE activo=1 ORDER BY nombre')->fetchAll();
+        $unidades_all = $db->query('SELECT id, cliente_id, marca, modelo, placas FROM clientes_unidades WHERE activo=1 ORDER BY marca, modelo')->fetchAll();
 
         $titulo    = 'Bitácora de servicio';
         $vistaPath = BASE_PATH . '/modules/bitacoras/views/lista.php';
 
         $this->render('bitacoras/lista', compact(
-            'titulo', 'vistaPath', 'result', 'filtros', 'clienteNombre', 'mecanicos', 'clientes'
+            'titulo', 'vistaPath', 'result', 'filtros', 'clienteNombre', 'mecanicos', 'clientes', 'unidades_all'
         ));
     }
 

@@ -17,7 +17,29 @@
 </div>
 
 <div class="row g-3 mb-4">
-    <!-- Cliente y vehículo -->
+    <!-- Unidad -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-semibold border-0 pb-0">
+                <i class="bi bi-car-front me-1 text-primary"></i> Vehículo
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><th style="width:110px">Marca/Modelo</th><td class="fw-semibold"><?= htmlspecialchars($bitacora['marca'] . ' ' . $bitacora['modelo']) ?></td></tr>
+                    <tr><th>Año</th><td><?= $bitacora['anio'] ?: '—' ?></td></tr>
+                    <tr><th>Placas</th><td class="font-monospace"><?= htmlspecialchars($bitacora['placas'] ?: '—') ?></td></tr>
+                    <?php if ($bitacora['numero_serie']): ?>
+                    <tr><th>No. Serie</th><td class="font-monospace small"><?= htmlspecialchars($bitacora['numero_serie']) ?></td></tr>
+                    <?php endif; ?>
+                    <?php if ($bitacora['color']): ?>
+                    <tr><th>Color</th><td><?= htmlspecialchars($bitacora['color']) ?></td></tr>
+                    <?php endif; ?>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cliente -->
     <div class="col-md-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white fw-semibold border-0 pb-0">
@@ -39,28 +61,6 @@
                     <?php endif; ?>
                     <?php if ($bitacora['cliente_tel']): ?>
                     <tr><th>Teléfono</th><td><?= htmlspecialchars($bitacora['cliente_tel']) ?></td></tr>
-                    <?php endif; ?>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Unidad -->
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white fw-semibold border-0 pb-0">
-                <i class="bi bi-car-front me-1 text-primary"></i> Vehículo
-            </div>
-            <div class="card-body">
-                <table class="table table-sm mb-0">
-                    <tr><th style="width:110px">Marca/Modelo</th><td class="fw-semibold"><?= htmlspecialchars($bitacora['marca'] . ' ' . $bitacora['modelo']) ?></td></tr>
-                    <tr><th>Año</th><td><?= $bitacora['anio'] ?: '—' ?></td></tr>
-                    <tr><th>Placas</th><td class="font-monospace"><?= htmlspecialchars($bitacora['placas'] ?: '—') ?></td></tr>
-                    <?php if ($bitacora['numero_serie']): ?>
-                    <tr><th>No. Serie</th><td class="font-monospace small"><?= htmlspecialchars($bitacora['numero_serie']) ?></td></tr>
-                    <?php endif; ?>
-                    <?php if ($bitacora['color']): ?>
-                    <tr><th>Color</th><td><?= htmlspecialchars($bitacora['color']) ?></td></tr>
                     <?php endif; ?>
                 </table>
             </div>
