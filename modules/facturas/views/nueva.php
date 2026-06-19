@@ -15,7 +15,7 @@
 
     <div class="row g-3 mb-3">
         <!-- Sucursal -->
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label fw-semibold">Sucursal <span class="text-danger">*</span></label>
             <?php if (Auth::esAdmin()): ?>
             <select name="sucursal_id" id="selSucursal" class="form-select" required onchange="filtrarMecanicos()">
@@ -36,7 +36,7 @@
             <?php endif; ?>
         </div>
         <!-- Mecánico (se filtra por la sucursal seleccionada) -->
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label fw-semibold">Mecánico</label>
             <select name="mecanico_id" id="selMecanico" class="form-select">
                 <option value="">— Sin mecánico —</option>
@@ -47,22 +47,6 @@
                 </option>
                 <?php endforeach; ?>
             </select>
-        </div>
-        <!-- Servicio: catálogo desplegable (autocompleta la mano de obra) -->
-        <div class="col-md-4">
-            <label class="form-label fw-semibold">Tipo de servicio</label>
-            <select name="servicio_id" id="selServicio" class="form-select">
-                <option value="" data-precio="0" data-nombre="">— Sin servicio —</option>
-                <?php foreach ($servicios as $sv): ?>
-                <option value="<?= $sv['id'] ?>"
-                        data-precio="<?= (float)$sv['precio'] ?>"
-                        data-nombre="<?= htmlspecialchars($sv['nombre'], ENT_QUOTES) ?>"
-                        <?= ($factura['servicio_id'] ?? '') == $sv['id'] ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($sv['nombre']) ?><?php if ($sv['precio'] > 0): ?> ($<?= number_format($sv['precio'], 2) ?>)<?php endif; ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
-            <div class="form-text">Selecciona un servicio para autocompletar la mano de obra</div>
         </div>
     </div>
 
@@ -225,19 +209,45 @@
         </div>
     </div>
 
-    <!-- Mano de obra, descuento y totales -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-5">
-            <label class="form-label fw-semibold">Descripción de mano de obra</label>
-            <input type="text" name="mano_obra_desc" id="inputManoObraDesc" class="form-control" maxlength="200"
-                   value="<?= htmlspecialchars($factura['mano_obra_desc'] ?? '') ?>"
-                   placeholder="Cambio de muelles delanteros, alineación…">
+    <!-- Servicios / Mano de obra -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-info bg-opacity-10 fw-semibold d-flex align-items-center gap-2">
+            <i class="bi bi-tools text-info"></i>
+            Servicios / Mano de obra
+            <span class="badge bg-info text-dark ms-1" id="numServicios">0</span>
         </div>
-        <div class="col-md-2">
-            <label class="form-label fw-semibold">Mano de obra ($)</label>
-            <input type="number" name="mano_obra" id="inputManoObra" class="form-control text-end"
-                   value="<?= $factura['mano_obra'] ?? 0 ?>" min="0" step="0.01" oninput="calcularTotales()">
-            <div class="form-text">Editable aunque venga del servicio</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0" id="tabla-servicios">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:35%">Tipo de servicio</th>
+                            <th>Descripción</th>
+                            <th class="text-end" style="width:140px">Mano de obra ($)</th>
+                            <th style="width:40px"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-servicios">
+                        <tr id="tr-sin-servicios">
+                            <td colspan="4" class="text-center text-muted py-2">Sin servicios agregados</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-transparent">
+            <button type="button" id="btn-agregar-servicio" class="btn btn-sm btn-outline-info">
+                <i class="bi bi-plus-lg me-1"></i> Agregar servicio
+            </button>
+        </div>
+    </div>
+
+    <!-- Descuento, totales y notas -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-7">
+            <label class="form-label fw-semibold">Notas</label>
+            <textarea name="notas" class="form-control" rows="3" maxlength="500"
+                      placeholder="Observaciones…"><?= htmlspecialchars($factura['notas'] ?? '') ?></textarea>
         </div>
         <div class="col-md-2">
             <label class="form-label fw-semibold">Descuento</label>
@@ -267,11 +277,6 @@
                     <div class="d-flex justify-content-between fw-bold"><span>Total:</span><span id="lblTotal" class="text-warning fs-5">$0.00</span></div>
                 </div>
             </div>
-        </div>
-        <div class="col-12">
-            <label class="form-label fw-semibold">Notas</label>
-            <textarea name="notas" class="form-control" rows="2" maxlength="500"
-                      placeholder="Observaciones…"><?= htmlspecialchars($factura['notas'] ?? '') ?></textarea>
         </div>
     </div>
 
@@ -335,17 +340,74 @@ function filtrarMecanicos() {
 }
 filtrarMecanicos();  // aplicar al cargar (sucursal inicial / del almacenista)
 
-// ---- Auto-llenar mano de obra al seleccionar servicio del desplegable ----
-document.getElementById('selServicio')?.addEventListener('change', function() {
-    const opt    = this.options[this.selectedIndex];
-    const precio = parseFloat(opt.dataset.precio || 0);
-    // Solo autocompleta el COSTO de la mano de obra (editable). La descripción
-    // la escribe el usuario manualmente — no se rellena con el nombre del servicio.
-    if (precio > 0) {
-        document.getElementById('inputManoObra').value = precio.toFixed(2);
-    }
+// ---- Catálogo de servicios (para las filas dinámicas) ----
+const catalogoServicios = <?= json_encode($servicios) ?>;
+const serviciosEdit     = <?= isset($serviciosDetalle) ? json_encode(array_values($serviciosDetalle)) : '[]' ?>;
+
+function actualizarNumServicios() {
+    const rows = document.querySelectorAll('#body-servicios tr:not(#tr-sin-servicios)');
+    document.getElementById('numServicios').textContent = rows.length;
+}
+
+function agregarFilaServicio(datos = {}) {
+    const tbody   = document.getElementById('body-servicios');
+    const trVacio = document.getElementById('tr-sin-servicios');
+    if (trVacio) trVacio.remove();
+
+    const tr = document.createElement('tr');
+
+    let options = '<option value="">— Tipo —</option>';
+    catalogoServicios.forEach(s => {
+        const sel = (datos.servicio_id != null && String(datos.servicio_id) === String(s.id)) ? ' selected' : '';
+        options += `<option value="${s.id}" data-precio="${s.precio}"${sel}>${esc(s.nombre)}</option>`;
+    });
+
+    const mo = datos.mano_obra != null ? parseFloat(datos.mano_obra).toFixed(2) : '0.00';
+
+    tr.innerHTML = `
+        <td>
+            <select name="srv_servicio_id[]" class="form-select form-select-sm sel-srv-tipo">${options}</select>
+        </td>
+        <td>
+            <input type="text" name="srv_descripcion[]" class="form-control form-control-sm"
+                   value="${esc(datos.descripcion || '')}" placeholder="Descripción del servicio…">
+        </td>
+        <td>
+            <input type="number" name="srv_mano_obra[]" class="form-control form-control-sm text-end inp-mo-servicio"
+                   step="0.01" min="0" value="${mo}">
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-quitar-srv">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>`;
+
+    tr.querySelector('.sel-srv-tipo').addEventListener('change', function() {
+        const opt    = this.options[this.selectedIndex];
+        const precio = parseFloat(opt.dataset.precio || 0);
+        if (precio > 0) tr.querySelector('.inp-mo-servicio').value = precio.toFixed(2);
+        calcularTotales();
+    });
+    tr.querySelector('.inp-mo-servicio').addEventListener('input', calcularTotales);
+    tr.querySelector('.btn-quitar-srv').addEventListener('click', function() {
+        tr.remove();
+        if (!document.querySelectorAll('#body-servicios tr').length) {
+            const trV = document.createElement('tr');
+            trV.id = 'tr-sin-servicios';
+            trV.innerHTML = '<td colspan="4" class="text-center text-muted py-2">Sin servicios agregados</td>';
+            document.getElementById('body-servicios').appendChild(trV);
+        }
+        actualizarNumServicios();
+        calcularTotales();
+    });
+
+    tbody.appendChild(tr);
+    actualizarNumServicios();
     calcularTotales();
-});
+}
+
+serviciosEdit.forEach(s => agregarFilaServicio(s));
+document.getElementById('btn-agregar-servicio').addEventListener('click', () => agregarFilaServicio());
 
 // ---- Descuento ----
 function toggleDescuento(chk) {
@@ -426,7 +488,8 @@ function renderTabla() {
 
 function calcularTotales() {
     const subtotal = partidas.reduce((s,p) => s + p.cantidad*p.precio_unitario, 0);
-    const manoObra = parseFloat(document.getElementById('inputManoObra').value) || 0;
+    const manoObra = Array.from(document.querySelectorAll('.inp-mo-servicio'))
+                         .reduce((s, inp) => s + (parseFloat(inp.value) || 0), 0);
     const chk      = document.getElementById('chkDescuento');
     const pct      = chk?.checked ? (parseFloat(document.getElementById('inputDescuento').value) || 0) : 0;
     const bruto    = subtotal + manoObra;
@@ -501,7 +564,6 @@ document.getElementById('inputEscaner').addEventListener('input', function() {
     }, 250);
 });
 document.addEventListener('click',e=>{ if(!e.target.closest('#sugerenciasWrap')&&!e.target.closest('#inputEscaner')) document.getElementById('listaSugerencias').style.display='none'; });
-document.getElementById('inputManoObra').addEventListener('input', calcularTotales);
 
 // ---- Catálogo de clientes ----
 let debounceCliente = null;

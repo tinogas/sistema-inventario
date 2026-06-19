@@ -60,7 +60,9 @@ $badgeColor = match($factura['estado']) {
                     <tr><th>Año</th><td><?= $factura['vh_anio'] ?></td></tr>
                     <tr><th>Placas</th><td><?= htmlspecialchars($factura['vh_placas'] ?: '—') ?></td></tr>
                     <tr><th>Mecánico</th><td><?= htmlspecialchars($factura['mecanico_nombre']) ?></td></tr>
+                    <?php if (empty($serviciosDetalle)): ?>
                     <tr><th>Servicio</th><td><?= htmlspecialchars($factura['servicio_nombre']) ?></td></tr>
+                    <?php endif; ?>
                 </table>
             </div>
         </div>
@@ -120,7 +122,15 @@ $badgeColor = match($factura['estado']) {
                 </tbody>
                 <tfoot class="table-light">
                     <tr><td colspan="5"></td><td class="text-end">Subtotal partes:</td><td class="text-end fw-bold">$<?= number_format($subtotal,2) ?></td></tr>
-                    <?php if ($factura['mano_obra'] > 0): ?>
+                    <?php if (!empty($serviciosDetalle)): ?>
+                        <?php foreach ($serviciosDetalle as $s): ?>
+                        <tr>
+                            <td colspan="5"></td>
+                            <td class="text-end small"><?= htmlspecialchars($s['servicio_nombre']) ?><?= $s['descripcion'] ? ': ' . htmlspecialchars($s['descripcion']) : '' ?>:</td>
+                            <td class="text-end fw-bold">$<?= number_format($s['mano_obra'],2) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php elseif ($factura['mano_obra'] > 0): ?>
                     <tr><td colspan="5"></td><td class="text-end"><?= htmlspecialchars($factura['mano_obra_desc'] ?: 'Mano de obra') ?>:</td>
                         <td class="text-end fw-bold">$<?= number_format($factura['mano_obra'],2) ?></td></tr>
                     <?php endif; ?>

@@ -88,15 +88,32 @@ class FacturaModel extends Model
         );
     }
 
+    public function getServiciosDetalle(int $factura_id): array
+    {
+        return $this->fetchAll(
+            "SELECT fs.*, s.nombre AS servicio_nombre
+               FROM facturas_servicios fs
+               INNER JOIN servicios s ON s.id = fs.servicio_id
+              WHERE fs.factura_id = :fid
+              ORDER BY fs.id ASC",
+            [':fid' => $factura_id]
+        );
+    }
+
     // ---- Guardar borrador ----
 
-    public function guardar(array $cab, array $partidas, ?int $id = null): int
+    public function guardar(array $cab, array $partidas, array $servicios = [], ?int $id = null): int
     {
         $this->beginTransaction();
         try {
             $descuento_pct = max(0, min(100, (float)($cab['descuento_pct'] ?? 0)));
             $cliente_id    = !empty($cab['cliente_id']) ? (int)$cab['cliente_id'] : null;
             $unidad_id     = !empty($cab['unidad_id'])  ? (int)$cab['unidad_id']  : null;
+
+            // La mano de obra es la suma de todos los servicios
+            if (!empty($servicios)) {
+                $cab['mano_obra'] = array_sum(array_column($servicios, 'mano_obra'));
+            }
 
             // Si hay unidad, auto-rellenar datos de vehículo desde el catálogo
             if ($unidad_id) {
@@ -181,6 +198,17 @@ class FacturaModel extends Model
                 );
                 $subtotal += $p['cantidad'] * $p['precio_unitario'];
             }
+
+            // Servicios (N por factura)
+            $this->execute('DELETE FROM facturas_servicios WHERE factura_id = :fid', [':fid' => $id]);
+            foreach ($servicios as $s) {
+                $this->execute(
+                    'INSERT INTO facturas_servicios (factura_id, servicio_id, descripcion, mano_obra)
+                     VALUES (:fid, :sid, :desc, :mo)',
+                    [':fid'=>$id, ':sid'=>(int)$s['servicio_id'], ':desc'=>($s['descripcion'] ?: null), ':mo'=>(float)$s['mano_obra']]
+                );
+            }
+
             $bruto = $subtotal + (float)($cab['mano_obra'] ?? 0);
             $total = $descuento_pct > 0 ? round($bruto * (1 - $descuento_pct / 100), 2) : $bruto;
             $this->execute(
@@ -210,6 +238,8 @@ class FacturaModel extends Model
         $detalle = $this->getDetalle($id);
         if (empty($detalle)) throw new RuntimeException('La factura no tiene partidas de productos.');
 
+        $serviciosDetalle = $this->getServiciosDetalle($id);
+
         $this->beginTransaction();
         try {
             $salidaModel = new SalidaModel();
@@ -238,7 +268,7 @@ class FacturaModel extends Model
             if ($factura['unidad_id']) {
                 // Recargar factura para obtener totales actualizados
                 $factura = $this->getById($id);
-                $this->crearBitacora($factura, $detalle);
+                $this->crearBitacora($factura, $detalle, $serviciosDetalle);
             }
 
             $this->commit();
@@ -248,7 +278,7 @@ class FacturaModel extends Model
         }
     }
 
-    private function crearBitacora(array $factura, array $detalle): void
+    private function crearBitacora(array $factura, array $detalle, array $serviciosDetalle = []): void
     {
         require_once BASE_PATH . '/modules/bitacoras/BitacoraModel.php';
 
@@ -258,7 +288,14 @@ class FacturaModel extends Model
             'precio_unitario' => (float)$d['precio_unitario'],
         ], $detalle), JSON_UNESCAPED_UNICODE);
 
-        $trabajos = $factura['mano_obra_desc'] ?: ($factura['servicio_nombre'] !== '—' ? $factura['servicio_nombre'] : null);
+        if (!empty($serviciosDetalle)) {
+            $trabajos = implode('; ', array_map(
+                fn($s) => $s['servicio_nombre'] . ($s['descripcion'] ? ': ' . $s['descripcion'] : ''),
+                $serviciosDetalle
+            ));
+        } else {
+            $trabajos = $factura['mano_obra_desc'] ?: ($factura['servicio_nombre'] !== '—' ? $factura['servicio_nombre'] : null);
+        }
 
         $bm = new BitacoraModel();
         $bm->crear([

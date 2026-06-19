@@ -117,7 +117,16 @@
             <h3>Servicio</h3>
             <table>
                 <tr><th>Mecánico:</th><td><?= htmlspecialchars($factura['mecanico_nombre']) ?></td></tr>
+                <?php if (!empty($serviciosDetalle)): ?>
+                    <?php foreach ($serviciosDetalle as $s): ?>
+                    <tr>
+                        <th><?= htmlspecialchars($s['servicio_nombre']) ?>:</th>
+                        <td><?= htmlspecialchars($s['descripcion'] ?: '—') ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
                 <tr><th>Tipo:</th><td><?= htmlspecialchars($factura['servicio_nombre']) ?></td></tr>
+                <?php endif; ?>
             </table>
         </div>
         <?php if ($factura['referencia_proneg'] || $factura['notas']): ?>
@@ -163,7 +172,15 @@
                 <td class="text-right">Subtotal partes:</td>
                 <td class="text-right">$<?= number_format($subtotal,2) ?></td>
             </tr>
-            <?php if ($factura['mano_obra'] > 0): ?>
+            <?php if (!empty($serviciosDetalle)): ?>
+                <?php foreach ($serviciosDetalle as $s): ?>
+                <tr>
+                    <td colspan="5"></td>
+                    <td class="text-right"><?= htmlspecialchars($s['servicio_nombre']) ?><?= $s['descripcion'] ? ': ' . htmlspecialchars($s['descripcion']) : '' ?>:</td>
+                    <td class="text-right">$<?= number_format($s['mano_obra'],2) ?></td>
+                </tr>
+                <?php endforeach; ?>
+            <?php elseif ($factura['mano_obra'] > 0): ?>
             <tr>
                 <td colspan="5"></td>
                 <td class="text-right"><?= htmlspecialchars($factura['mano_obra_desc'] ?: 'Mano de obra') ?>:</td>

@@ -38,11 +38,11 @@ class FacturaController extends Controller
         $this->requirePermiso('facturas.crear');
         $this->validarCsrf();
 
-        [$cab, $partidas] = $this->leerPost();
+        [$cab, $partidas, $servicios] = $this->leerPost();
         $id = $this->getInt('id') ?: null;
 
         try {
-            $id = $this->model->guardar($cab, $partidas, $id);
+            $id = $this->model->guardar($cab, $partidas, $servicios, $id);
             Session::flash('success', 'Borrador guardado.');
             $this->redirect('/?modulo=facturas&accion=detalle&id=' . $id);
         } catch (Exception $e) {
@@ -62,11 +62,12 @@ class FacturaController extends Controller
             $this->redirect('/?modulo=facturas');
         }
 
-        $detalle                  = $this->model->getDetalle($id);
+        $detalle          = $this->model->getDetalle($id);
+        $serviciosDetalle = $this->model->getServiciosDetalle($id);
         [$sucursales, $mecanicos, $servicios] = $this->catalogos();
 
         $titulo = 'Editar factura ' . $factura['folio'];
-        $this->render('facturas/nueva', compact('titulo','factura','detalle','sucursales','mecanicos','servicios'));
+        $this->render('facturas/nueva', compact('titulo','factura','detalle','serviciosDetalle','sucursales','mecanicos','servicios'));
     }
 
     public function detalle(): void
@@ -80,9 +81,10 @@ class FacturaController extends Controller
             $this->redirect('/?modulo=facturas');
         }
 
-        $detalle = $this->model->getDetalle($id);
-        $titulo  = 'Factura ' . $factura['folio'];
-        $this->render('facturas/detalle', compact('titulo','factura','detalle'));
+        $detalle          = $this->model->getDetalle($id);
+        $serviciosDetalle = $this->model->getServiciosDetalle($id);
+        $titulo           = 'Factura ' . $factura['folio'];
+        $this->render('facturas/detalle', compact('titulo','factura','detalle','serviciosDetalle'));
     }
 
     public function emitir(): void
@@ -143,8 +145,9 @@ class FacturaController extends Controller
             die('Factura no encontrada.');
         }
 
-        $detalle = $this->model->getDetalle($id);
-        $this->renderSinLayout(BASE_PATH . '/modules/facturas/views/imprimir.php', compact('factura','detalle'));
+        $detalle          = $this->model->getDetalle($id);
+        $serviciosDetalle = $this->model->getServiciosDetalle($id);
+        $this->renderSinLayout(BASE_PATH . '/modules/facturas/views/imprimir.php', compact('factura','detalle','serviciosDetalle'));
     }
 
     // ---- Helpers ----
@@ -200,6 +203,22 @@ class FacturaController extends Controller
                 $partidas[] = ['producto_id'=>$pid, 'cantidad'=>$qty, 'precio_unitario'=>$prc];
             }
         }
-        return [$cab, $partidas];
+
+        $srvIds   = $_POST['srv_servicio_id'] ?? [];
+        $srvDescs = $_POST['srv_descripcion'] ?? [];
+        $srvMos   = $_POST['srv_mano_obra']   ?? [];
+
+        $servicios = [];
+        foreach ($srvIds as $i => $sid) {
+            $sid = (int)$sid;
+            if ($sid <= 0) continue;
+            $servicios[] = [
+                'servicio_id' => $sid,
+                'descripcion' => trim($srvDescs[$i] ?? ''),
+                'mano_obra'   => (float)str_replace(',', '.', $srvMos[$i] ?? 0),
+            ];
+        }
+
+        return [$cab, $partidas, $servicios];
     }
 }
