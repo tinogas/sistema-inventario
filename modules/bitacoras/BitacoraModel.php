@@ -24,6 +24,22 @@ class BitacoraModel extends Model
             $where .= ' AND b.fecha_servicio <= :fecha_hasta';
             $params[':fecha_hasta'] = $filtros['fecha_hasta'];
         }
+        if (!empty($filtros['buscar_cliente'])) {
+            $where .= ' AND c.nombre LIKE :buscar_cliente';
+            $params[':buscar_cliente'] = '%' . $filtros['buscar_cliente'] . '%';
+        }
+        if (!empty($filtros['placas'])) {
+            $where .= ' AND cu.placas LIKE :placas';
+            $params[':placas'] = '%' . $filtros['placas'] . '%';
+        }
+        if (!empty($filtros['mecanico_id'])) {
+            $where .= ' AND b.mecanico_id = :mecanico_id';
+            $params[':mecanico_id'] = $filtros['mecanico_id'];
+        }
+        if (!empty($filtros['folio'])) {
+            $where .= ' AND f.folio LIKE :folio';
+            $params[':folio'] = '%' . $filtros['folio'] . '%';
+        }
 
         $sql = "SELECT b.id, b.fecha_servicio, b.total, b.mano_obra, b.subtotal,
                        b.descripcion, b.trabajos_realizados,

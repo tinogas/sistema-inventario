@@ -1,3 +1,18 @@
+<?php
+// Construir query base para paginación (excluye 'pagina')
+$qFiltros = array_filter([
+    'modulo'         => 'bitacoras',
+    'cliente_id'     => $filtros['cliente_id']     ?: '',
+    'unidad_id'      => $filtros['unidad_id']       ?: '',
+    'fecha_desde'    => $filtros['fecha_desde'],
+    'fecha_hasta'    => $filtros['fecha_hasta'],
+    'buscar_cliente' => $filtros['buscar_cliente'],
+    'placas'         => $filtros['placas'],
+    'mecanico_id'    => $filtros['mecanico_id']     ?: '',
+    'folio'          => $filtros['folio'],
+], fn($v) => $v !== '' && $v !== null);
+$qBase = http_build_query($qFiltros);
+?>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 mb-0">
         <i class="bi bi-journal-text me-2 text-info"></i>
@@ -11,32 +26,73 @@
 <!-- Filtros -->
 <form method="GET" action="<?= $appUrl ?>/" class="mb-3">
     <input type="hidden" name="modulo" value="bitacoras">
-    <div class="row g-2 align-items-end">
-        <div class="col-md-3">
-            <label class="form-label small fw-semibold">Desde</label>
-            <input type="date" name="fecha_desde" class="form-control form-control-sm"
-                   value="<?= htmlspecialchars($filtros['fecha_desde'] ?? '') ?>">
-        </div>
-        <div class="col-md-3">
-            <label class="form-label small fw-semibold">Hasta</label>
-            <input type="date" name="fecha_hasta" class="form-control form-control-sm"
-                   value="<?= htmlspecialchars($filtros['fecha_hasta'] ?? '') ?>">
-        </div>
-        <?php if ($filtros['cliente_id']): ?>
-        <input type="hidden" name="cliente_id" value="<?= (int)$filtros['cliente_id'] ?>">
-        <?php endif; ?>
-        <?php if ($filtros['unidad_id']): ?>
-        <input type="hidden" name="unidad_id" value="<?= (int)$filtros['unidad_id'] ?>">
-        <?php endif; ?>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-sm btn-outline-primary w-100">
-                <i class="bi bi-funnel me-1"></i> Filtrar
-            </button>
-        </div>
-        <div class="col-md-2">
-            <a href="<?= $appUrl ?>/?modulo=bitacoras" class="btn btn-sm btn-outline-secondary w-100">
-                <i class="bi bi-x-lg me-1"></i> Limpiar
-            </a>
+    <?php if ($filtros['cliente_id']): ?>
+    <input type="hidden" name="cliente_id" value="<?= (int)$filtros['cliente_id'] ?>">
+    <?php endif; ?>
+    <?php if ($filtros['unidad_id']): ?>
+    <input type="hidden" name="unidad_id" value="<?= (int)$filtros['unidad_id'] ?>">
+    <?php endif; ?>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body py-2 px-3">
+            <div class="row g-2 align-items-end">
+                <!-- Fechas -->
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Desde</label>
+                    <input type="date" name="fecha_desde" class="form-control form-control-sm"
+                           value="<?= htmlspecialchars($filtros['fecha_desde'] ?? '') ?>">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Hasta</label>
+                    <input type="date" name="fecha_hasta" class="form-control form-control-sm"
+                           value="<?= htmlspecialchars($filtros['fecha_hasta'] ?? '') ?>">
+                </div>
+                <!-- Cliente (texto) -->
+                <div class="col-12 col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Cliente</label>
+                    <input type="text" name="buscar_cliente" class="form-control form-control-sm"
+                           placeholder="Nombre del cliente…"
+                           value="<?= htmlspecialchars($filtros['buscar_cliente'] ?? '') ?>">
+                </div>
+                <!-- Folio -->
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Folio</label>
+                    <input type="text" name="folio" class="form-control form-control-sm"
+                           placeholder="FAC-…"
+                           value="<?= htmlspecialchars($filtros['folio'] ?? '') ?>">
+                </div>
+                <!-- Placas -->
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Placas</label>
+                    <input type="text" name="placas" class="form-control form-control-sm"
+                           placeholder="ABC-1234"
+                           value="<?= htmlspecialchars($filtros['placas'] ?? '') ?>">
+                </div>
+                <!-- Mecánico -->
+                <div class="col-12 col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Mecánico</label>
+                    <select name="mecanico_id" class="form-select form-select-sm">
+                        <option value="">— Todos —</option>
+                        <?php foreach ($mecanicos as $m): ?>
+                        <option value="<?= $m['id'] ?>"
+                            <?= ($filtros['mecanico_id'] == $m['id']) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($m['nombre']) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <!-- Botones -->
+                <div class="col-6 col-md-auto">
+                    <button type="submit" class="btn btn-sm btn-primary w-100">
+                        <i class="bi bi-funnel me-1"></i> Filtrar
+                    </button>
+                </div>
+                <div class="col-6 col-md-auto">
+                    <a href="<?= $appUrl ?>/?modulo=bitacoras" class="btn btn-sm btn-outline-secondary w-100">
+                        <i class="bi bi-x-lg me-1"></i> Limpiar
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </form>
@@ -108,7 +164,7 @@
             <ul class="pagination pagination-sm mb-0">
                 <?php if ($result['pagina'] > 1): ?>
                 <li class="page-item">
-                    <a class="page-link" href="<?= $appUrl ?>/?modulo=bitacoras&pagina=<?= $result['pagina'] - 1 ?>&fecha_desde=<?= urlencode($filtros['fecha_desde']??'') ?>&fecha_hasta=<?= urlencode($filtros['fecha_hasta']??'') ?>&cliente_id=<?= (int)($filtros['cliente_id']??0) ?>">
+                    <a class="page-link" href="<?= $appUrl ?>/?<?= $qBase ?>&pagina=<?= $result['pagina'] - 1 ?>">
                         <i class="bi bi-chevron-left"></i>
                     </a>
                 </li>
@@ -119,12 +175,12 @@
                 for ($p = $desde; $p <= $hasta; $p++):
                 ?>
                 <li class="page-item <?= $p === $result['pagina'] ? 'active' : '' ?>">
-                    <a class="page-link" href="<?= $appUrl ?>/?modulo=bitacoras&pagina=<?= $p ?>&fecha_desde=<?= urlencode($filtros['fecha_desde']??'') ?>&fecha_hasta=<?= urlencode($filtros['fecha_hasta']??'') ?>&cliente_id=<?= (int)($filtros['cliente_id']??0) ?>"><?= $p ?></a>
+                    <a class="page-link" href="<?= $appUrl ?>/?<?= $qBase ?>&pagina=<?= $p ?>"><?= $p ?></a>
                 </li>
                 <?php endfor; ?>
                 <?php if ($result['pagina'] < $result['total_paginas']): ?>
                 <li class="page-item">
-                    <a class="page-link" href="<?= $appUrl ?>/?modulo=bitacoras&pagina=<?= $result['pagina'] + 1 ?>&fecha_desde=<?= urlencode($filtros['fecha_desde']??'') ?>&fecha_hasta=<?= urlencode($filtros['fecha_hasta']??'') ?>&cliente_id=<?= (int)($filtros['cliente_id']??0) ?>">
+                    <a class="page-link" href="<?= $appUrl ?>/?<?= $qBase ?>&pagina=<?= $result['pagina'] + 1 ?>">
                         <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>

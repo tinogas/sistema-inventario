@@ -16,15 +16,19 @@ class BitacoraController extends Controller
         $this->requirePermiso('bitacoras.ver');
 
         $filtros = [
-            'cliente_id'  => $this->getInt('cliente_id')  ?: null,
-            'unidad_id'   => $this->getInt('unidad_id')   ?: null,
-            'fecha_desde' => $this->getStr('fecha_desde'),
-            'fecha_hasta' => $this->getStr('fecha_hasta'),
+            'cliente_id'     => $this->getInt('cliente_id')     ?: null,
+            'unidad_id'      => $this->getInt('unidad_id')      ?: null,
+            'fecha_desde'    => $this->getStr('fecha_desde'),
+            'fecha_hasta'    => $this->getStr('fecha_hasta'),
+            'buscar_cliente' => $this->getStr('buscar_cliente'),
+            'placas'         => $this->getStr('placas'),
+            'mecanico_id'    => $this->getInt('mecanico_id')    ?: null,
+            'folio'          => $this->getStr('folio'),
         ];
         $pagina = max(1, $this->getInt('pagina', 1));
         $result = $this->model->listar($filtros, $pagina);
 
-        // Si viene filtrado por cliente, cargamos su nombre para mostrarlo
+        // Si viene filtrado por cliente_id (deep-link desde ficha), mostramos su nombre
         $clienteNombre = '';
         if ($filtros['cliente_id']) {
             require_once BASE_PATH . '/modules/clientes/ClienteModel.php';
@@ -33,11 +37,14 @@ class BitacoraController extends Controller
             $clienteNombre = $cl['nombre'] ?? '';
         }
 
+        $db        = \Database::getInstance();
+        $mecanicos = $db->query('SELECT id, nombre FROM mecanicos WHERE activo=1 ORDER BY nombre')->fetchAll();
+
         $titulo    = 'Bitácora de servicio';
         $vistaPath = BASE_PATH . '/modules/bitacoras/views/lista.php';
 
         $this->render('bitacoras/lista', compact(
-            'titulo', 'vistaPath', 'result', 'filtros', 'clienteNombre'
+            'titulo', 'vistaPath', 'result', 'filtros', 'clienteNombre', 'mecanicos'
         ));
     }
 
