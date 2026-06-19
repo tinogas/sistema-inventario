@@ -41,7 +41,7 @@ class BitacoraModel extends Model
             $params[':folio'] = '%' . $filtros['folio'] . '%';
         }
 
-        $sql = "SELECT b.id, b.fecha_servicio, b.total, b.mano_obra, b.subtotal,
+        $sql = "SELECT b.id, b.factura_id, b.fecha_servicio, b.total, b.mano_obra, b.subtotal,
                        b.descripcion, b.trabajos_realizados,
                        f.folio, f.estado AS factura_estado,
                        c.id AS cliente_id, c.nombre AS cliente_nombre,
@@ -82,13 +82,17 @@ class BitacoraModel extends Model
     public function getByUnidad(int $unidad_id): array
     {
         return $this->fetchAll(
-            "SELECT b.id, b.fecha_servicio, b.total, b.descripcion, b.trabajos_realizados,
-                    f.folio, COALESCE(m.nombre,'—') AS mecanico
+            "SELECT b.id, b.fecha_servicio, b.descripcion, b.trabajos_realizados,
+                    b.productos_snapshot,
+                    f.folio, f.id AS factura_id,
+                    COALESCE(m.nombre,'—') AS mecanico,
+                    su.nombre AS sucursal
                FROM bitacoras_servicio b
-               INNER JOIN facturas f ON f.id = b.factura_id
-               LEFT  JOIN mecanicos m ON m.id = b.mecanico_id
+               INNER JOIN facturas   f  ON f.id  = b.factura_id
+               LEFT  JOIN mecanicos  m  ON m.id  = b.mecanico_id
+               LEFT  JOIN sucursales su ON su.id = f.sucursal_id
               WHERE b.unidad_id = :uid
-              ORDER BY b.fecha_servicio DESC",
+              ORDER BY b.fecha_servicio DESC, b.id DESC",
             [':uid' => $unidad_id]
         );
     }

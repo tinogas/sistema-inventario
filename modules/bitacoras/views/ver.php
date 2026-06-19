@@ -5,19 +5,17 @@
         </a>
         <h1 class="h4 mb-0">
             <i class="bi bi-journal-check me-2 text-info"></i>
-            Bitácora — <?= htmlspecialchars($bitacora['folio']) ?>
+            Historial —
+            <?= htmlspecialchars($bitacora['marca'] . ' ' . $bitacora['modelo']) ?>
+            <?php if ($bitacora['placas']): ?>
+            <span class="text-muted fw-normal font-monospace fs-6 ms-1">· <?= htmlspecialchars($bitacora['placas']) ?></span>
+            <?php endif; ?>
         </h1>
     </div>
-    <?php if (Auth::tienePermiso('bitacoras.imprimir')): ?>
-    <a href="<?= $appUrl ?>/?modulo=bitacoras&accion=imprimir&id=<?= $bitacora['id'] ?>"
-       class="btn btn-sm btn-outline-secondary" target="_blank">
-        <i class="bi bi-printer me-1"></i> Imprimir
-    </a>
-    <?php endif; ?>
 </div>
 
+<!-- Vehículo y Cliente -->
 <div class="row g-3 mb-4">
-    <!-- Unidad -->
     <div class="col-md-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white fw-semibold border-0 pb-0">
@@ -38,8 +36,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Cliente -->
     <div class="col-md-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white fw-semibold border-0 pb-0">
@@ -66,80 +62,82 @@
             </div>
         </div>
     </div>
-
-    <!-- Info del servicio -->
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white fw-semibold border-0 pb-0">
-                <i class="bi bi-tools me-1 text-primary"></i> Servicio realizado
-            </div>
-            <div class="card-body">
-                <div class="row g-3 mb-3">
-                    <div class="col-md-3"><strong>Fecha:</strong> <?= date('d/m/Y', strtotime($bitacora['fecha_servicio'])) ?></div>
-                    <div class="col-md-3"><strong>Mecánico:</strong> <?= htmlspecialchars($bitacora['mecanico_nombre']) ?></div>
-                    <div class="col-md-3">
-                        <strong>Factura:</strong>
-                        <a href="<?= $appUrl ?>/?modulo=facturas&accion=detalle&id=<?= $bitacora['factura_id'] ?>"
-                           class="font-monospace text-decoration-none">
-                            <?= htmlspecialchars($bitacora['folio']) ?>
-                        </a>
-                    </div>
-                </div>
-                <?php if ($bitacora['descripcion']): ?>
-                <div class="mb-2">
-                    <strong>Descripción:</strong>
-                    <p class="mb-0 text-muted"><?= nl2br(htmlspecialchars($bitacora['descripcion'])) ?></p>
-                </div>
-                <?php endif; ?>
-                <?php if ($bitacora['trabajos_realizados']): ?>
-                <div>
-                    <strong>Trabajos realizados:</strong>
-                    <p class="mb-0 text-muted"><?= nl2br(htmlspecialchars($bitacora['trabajos_realizados'])) ?></p>
-                </div>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
 </div>
 
-<!-- Partidas -->
-<?php if (!empty($productos)): ?>
-<div class="card border-0 shadow-sm mb-3">
-    <div class="card-header bg-white fw-semibold">
-        Partes utilizadas <span class="badge bg-secondary ms-1"><?= count($productos) ?></span>
+<!-- Historial de servicios -->
+<h5 class="fw-semibold mb-3">
+    <i class="bi bi-clock-history me-1 text-info"></i>
+    Historial de servicios
+    <span class="badge bg-secondary ms-1"><?= count($historial) ?></span>
+</h5>
+
+<?php if (empty($historial)): ?>
+<div class="text-center text-muted py-5">
+    <i class="bi bi-journal fs-3 d-block mb-2"></i>
+    Sin servicios registrados para esta unidad.
+</div>
+<?php else: ?>
+<div class="d-flex flex-column gap-3">
+<?php foreach ($historial as $srv): ?>
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-light d-flex flex-wrap align-items-center gap-3 py-2">
+        <span class="fw-semibold text-nowrap">
+            <i class="bi bi-calendar3 me-1 text-muted"></i>
+            <?= date('d/m/Y', strtotime($srv['fecha_servicio'])) ?>
+        </span>
+        <a href="<?= $appUrl ?>/?modulo=facturas&accion=detalle&id=<?= $srv['factura_id'] ?>"
+           class="font-monospace small text-decoration-none text-info fw-semibold text-nowrap">
+            <i class="bi bi-receipt me-1"></i><?= htmlspecialchars($srv['folio']) ?>
+        </a>
+        <span class="text-muted small text-nowrap">
+            <i class="bi bi-person-gear me-1"></i><?= htmlspecialchars($srv['mecanico']) ?>
+        </span>
+        <?php if ($srv['sucursal']): ?>
+        <span class="text-muted small text-nowrap">
+            <i class="bi bi-building me-1"></i><?= htmlspecialchars($srv['sucursal']) ?>
+        </span>
+        <?php endif; ?>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-sm mb-0">
+    <div class="card-body pb-2">
+        <?php if ($srv['descripcion']): ?>
+        <p class="mb-2 small">
+            <span class="fw-semibold">Descripción:</span>
+            <?= nl2br(htmlspecialchars($srv['descripcion'])) ?>
+        </p>
+        <?php endif; ?>
+        <?php if ($srv['trabajos_realizados']): ?>
+        <div class="mb-2">
+            <p class="fw-semibold small mb-1"><i class="bi bi-wrench-adjustable me-1 text-muted"></i>Trabajos realizados:</p>
+            <ul class="list-unstyled mb-0 ps-3">
+                <?php foreach (array_filter(array_map('trim', explode(';', $srv['trabajos_realizados']))) as $trabajo): ?>
+                <li class="small">· <?= htmlspecialchars($trabajo) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <?php endif; ?>
+        <?php if (!empty($srv['productos'])): ?>
+        <div class="mt-2">
+            <p class="fw-semibold small mb-1"><i class="bi bi-box-seam me-1 text-muted"></i>Partes utilizadas:</p>
+            <table class="table table-sm table-borderless mb-0" style="max-width:480px">
                 <thead class="table-light">
                     <tr>
-                        <th>#</th>
-                        <th>Producto</th>
-                        <th class="text-end">Cantidad</th>
-                        <th class="text-end">Precio unit.</th>
-                        <th class="text-end">Importe</th>
+                        <th class="small">Producto</th>
+                        <th class="small text-end" style="width:80px">Cantidad</th>
                     </tr>
                 </thead>
                 <tbody>
-                <?php $subtotal = 0; foreach ($productos as $i => $p): $imp = $p['cantidad'] * $p['precio_unitario']; $subtotal += $imp; ?>
+                <?php foreach ($srv['productos'] as $p): ?>
                 <tr>
-                    <td><?= $i + 1 ?></td>
-                    <td><?= htmlspecialchars($p['nombre']) ?></td>
-                    <td class="text-end"><?= number_format($p['cantidad'], 3) ?></td>
-                    <td class="text-end">$<?= number_format($p['precio_unitario'], 2) ?></td>
-                    <td class="text-end fw-semibold">$<?= number_format($imp, 2) ?></td>
+                    <td class="small"><?= htmlspecialchars($p['nombre']) ?></td>
+                    <td class="small text-end font-monospace"><?= number_format((float)$p['cantidad'], 0) ?></td>
                 </tr>
                 <?php endforeach; ?>
                 </tbody>
-                <tfoot class="table-light">
-                    <tr><td colspan="3"></td><td class="text-end">Subtotal partes:</td><td class="text-end fw-bold">$<?= number_format($bitacora['subtotal'], 2) ?></td></tr>
-                    <?php if ($bitacora['mano_obra'] > 0): ?>
-                    <tr><td colspan="3"></td><td class="text-end">Mano de obra:</td><td class="text-end fw-bold">$<?= number_format($bitacora['mano_obra'], 2) ?></td></tr>
-                    <?php endif; ?>
-                    <tr><td colspan="3"></td><td class="text-end fw-bold fs-5">Total:</td><td class="text-end fw-bold fs-5 text-info">$<?= number_format($bitacora['total'], 2) ?></td></tr>
-                </tfoot>
             </table>
         </div>
+        <?php endif; ?>
     </div>
+</div>
+<?php endforeach; ?>
 </div>
 <?php endif; ?>

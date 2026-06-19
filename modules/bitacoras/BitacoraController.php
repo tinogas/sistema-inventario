@@ -61,12 +61,16 @@ class BitacoraController extends Controller
             return;
         }
 
-        $productos = json_decode($bitacora['productos_snapshot'] ?? '[]', true) ?: [];
+        $historial = $this->model->getByUnidad($bitacora['unidad_id']);
+        foreach ($historial as &$h) {
+            $h['productos'] = json_decode($h['productos_snapshot'] ?? '[]', true) ?: [];
+        }
+        unset($h);
 
-        $titulo    = 'Bitácora — ' . $bitacora['folio'];
+        $titulo    = 'Historial — ' . $bitacora['marca'] . ' ' . $bitacora['modelo'];
         $vistaPath = BASE_PATH . '/modules/bitacoras/views/ver.php';
 
-        $this->render('bitacoras/ver', compact('titulo', 'bitacora', 'productos', 'vistaPath'));
+        $this->render('bitacoras/ver', compact('titulo', 'bitacora', 'historial', 'vistaPath'));
     }
 
     public function imprimir(): void
