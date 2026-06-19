@@ -1,15 +1,14 @@
 <?php
 // Construir query base para paginación (excluye 'pagina')
 $qFiltros = array_filter([
-    'modulo'         => 'bitacoras',
-    'cliente_id'     => $filtros['cliente_id']     ?: '',
-    'unidad_id'      => $filtros['unidad_id']       ?: '',
-    'fecha_desde'    => $filtros['fecha_desde'],
-    'fecha_hasta'    => $filtros['fecha_hasta'],
-    'buscar_cliente' => $filtros['buscar_cliente'],
-    'placas'         => $filtros['placas'],
-    'mecanico_id'    => $filtros['mecanico_id']     ?: '',
-    'folio'          => $filtros['folio'],
+    'modulo'      => 'bitacoras',
+    'cliente_id'  => $filtros['cliente_id']  ?: '',
+    'unidad_id'   => $filtros['unidad_id']   ?: '',
+    'fecha_desde' => $filtros['fecha_desde'],
+    'fecha_hasta' => $filtros['fecha_hasta'],
+    'placas'      => $filtros['placas'],
+    'mecanico_id' => $filtros['mecanico_id'] ?: '',
+    'folio'       => $filtros['folio'],
 ], fn($v) => $v !== '' && $v !== null);
 $qBase = http_build_query($qFiltros);
 ?>
@@ -26,9 +25,6 @@ $qBase = http_build_query($qFiltros);
 <!-- Filtros -->
 <form method="GET" action="<?= $appUrl ?>/" class="mb-3">
     <input type="hidden" name="modulo" value="bitacoras">
-    <?php if ($filtros['cliente_id']): ?>
-    <input type="hidden" name="cliente_id" value="<?= (int)$filtros['cliente_id'] ?>">
-    <?php endif; ?>
     <?php if ($filtros['unidad_id']): ?>
     <input type="hidden" name="unidad_id" value="<?= (int)$filtros['unidad_id'] ?>">
     <?php endif; ?>
@@ -47,12 +43,18 @@ $qBase = http_build_query($qFiltros);
                     <input type="date" name="fecha_hasta" class="form-control form-control-sm"
                            value="<?= htmlspecialchars($filtros['fecha_hasta'] ?? '') ?>">
                 </div>
-                <!-- Cliente (texto) -->
+                <!-- Cliente (select) -->
                 <div class="col-12 col-md-3">
                     <label class="form-label small fw-semibold mb-1">Cliente</label>
-                    <input type="text" name="buscar_cliente" class="form-control form-control-sm"
-                           placeholder="Nombre del cliente…"
-                           value="<?= htmlspecialchars($filtros['buscar_cliente'] ?? '') ?>">
+                    <select name="cliente_id" class="form-select form-select-sm">
+                        <option value="">— Todos —</option>
+                        <?php foreach ($clientes as $c): ?>
+                        <option value="<?= $c['id'] ?>"
+                            <?= ($filtros['cliente_id'] == $c['id']) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($c['nombre']) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
                 <!-- Folio -->
                 <div class="col-6 col-md-2">
