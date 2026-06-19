@@ -66,6 +66,53 @@
         </div>
     </div>
 
+    <!-- Búsqueda de cliente del catálogo -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-primary bg-opacity-10 fw-semibold">
+            <i class="bi bi-person-check me-1 text-primary"></i>
+            Cliente del catálogo
+            <span class="text-muted fw-normal small ms-2">— opcional, auto-rellena los campos</span>
+        </div>
+        <div class="card-body pb-2">
+            <input type="hidden" name="cliente_id" id="hidClienteId" value="<?= (int)($factura['cliente_id'] ?? 0) ?>">
+            <input type="hidden" name="unidad_id"  id="hidUnidadId"  value="<?= (int)($factura['unidad_id']  ?? 0) ?>">
+
+            <div class="row g-2 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold">Buscar cliente</label>
+                    <div class="position-relative">
+                        <input type="text" id="inputClienteBuscar" class="form-control"
+                               placeholder="Nombre, RFC o teléfono…"
+                               value="<?= htmlspecialchars($factura['cliente_nombre'] ?? '') ?>"
+                               autocomplete="off">
+                        <ul id="listaClientesSug" class="list-group position-absolute w-100 shadow"
+                            style="z-index:999;display:none;max-height:200px;overflow-y:auto"></ul>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold">Unidad del cliente</label>
+                    <select id="selUnidadCatalogo" class="form-select">
+                        <option value="">— Seleccionar unidad —</option>
+                        <?php if (!empty($factura['unidad_id'])): ?>
+                        <option value="<?= (int)$factura['unidad_id'] ?>" selected>
+                            <?= htmlspecialchars(($factura['vh_marca'] ?? '') . ' ' . ($factura['vh_modelo'] ?? '') . ' ' . ($factura['vh_placas'] ?? '')) ?>
+                        </option>
+                        <?php endif; ?>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" id="btnLimpiarCliente" title="Quitar cliente del catálogo">
+                        <i class="bi bi-x-circle me-1"></i> Quitar
+                    </button>
+                    <a href="<?= $appUrl ?>/?modulo=clientes&accion=nuevo" target="_blank"
+                       class="btn btn-sm btn-outline-primary" title="Crear nuevo cliente">
+                        <i class="bi bi-person-plus"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Datos del cliente y vehículo -->
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-header bg-light fw-semibold"><i class="bi bi-person me-1"></i>Datos del cliente y vehículo</div>
@@ -73,36 +120,36 @@
             <div class="row g-3">
                 <div class="col-md-5">
                     <label class="form-label fw-semibold">Nombre del cliente <span class="text-danger">*</span></label>
-                    <input type="text" name="cliente_nombre" class="form-control" required maxlength="150"
+                    <input type="text" name="cliente_nombre" id="inputClienteNombre" class="form-control" required maxlength="150"
                            value="<?= htmlspecialchars($factura['cliente_nombre'] ?? '') ?>"
                            placeholder="Nombre completo">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Teléfono</label>
-                    <input type="text" name="cliente_tel" class="form-control" maxlength="25"
+                    <input type="text" name="cliente_tel" id="inputClienteTel" class="form-control" maxlength="25"
                            value="<?= htmlspecialchars($factura['cliente_tel'] ?? '') ?>"
                            placeholder="662-123-4567">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Marca <span class="text-danger">*</span></label>
-                    <input type="text" name="vh_marca" class="form-control" required maxlength="60"
+                    <input type="text" name="vh_marca" id="inputVhMarca" class="form-control" required maxlength="60"
                            value="<?= htmlspecialchars($factura['vh_marca'] ?? '') ?>"
                            placeholder="Toyota, Ford, Chevrolet…">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Modelo <span class="text-danger">*</span></label>
-                    <input type="text" name="vh_modelo" class="form-control" required maxlength="80"
+                    <input type="text" name="vh_modelo" id="inputVhModelo" class="form-control" required maxlength="80"
                            value="<?= htmlspecialchars($factura['vh_modelo'] ?? '') ?>"
                            placeholder="Hilux, F-150, Silverado…">
                 </div>
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Año <span class="text-danger">*</span></label>
-                    <input type="number" name="vh_anio" class="form-control" required min="1980" max="<?= date('Y')+1 ?>"
+                    <input type="number" name="vh_anio" id="inputVhAnio" class="form-control" required min="1980" max="<?= date('Y')+1 ?>"
                            value="<?= $factura['vh_anio'] ?? date('Y') ?>">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Placas</label>
-                    <input type="text" name="vh_placas" class="form-control" maxlength="20"
+                    <input type="text" name="vh_placas" id="inputVhPlacas" class="form-control" maxlength="20"
                            value="<?= htmlspecialchars($factura['vh_placas'] ?? '') ?>"
                            placeholder="ABC-123" style="text-transform:uppercase">
                 </div>
@@ -455,4 +502,83 @@ document.getElementById('inputEscaner').addEventListener('input', function() {
 });
 document.addEventListener('click',e=>{ if(!e.target.closest('#sugerenciasWrap')&&!e.target.closest('#inputEscaner')) document.getElementById('listaSugerencias').style.display='none'; });
 document.getElementById('inputManoObra').addEventListener('input', calcularTotales);
+
+// ---- Catálogo de clientes ----
+let debounceCliente = null;
+const inputBuscar   = document.getElementById('inputClienteBuscar');
+const listaClientes = document.getElementById('listaClientesSug');
+const selUnidad     = document.getElementById('selUnidadCatalogo');
+const hidCli        = document.getElementById('hidClienteId');
+const hidUni        = document.getElementById('hidUnidadId');
+
+inputBuscar.addEventListener('input', function () {
+    hidCli.value = '';
+    hidUni.value = '';
+    selUnidad.innerHTML = '<option value="">— Seleccionar unidad —</option>';
+    clearTimeout(debounceCliente);
+    const q = this.value.trim();
+    if (q.length < 2) { listaClientes.style.display = 'none'; return; }
+    debounceCliente = setTimeout(() => {
+        fetch(APP_URL + '/api/clientes_buscar.php?q=' + encodeURIComponent(q))
+            .then(r => r.json())
+            .then(d => {
+                listaClientes.innerHTML = '';
+                (d.sugerencias || []).forEach(c => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item list-group-item-action py-1 cursor-pointer';
+                    li.textContent = c.nombre + (c.telefono ? ' — ' + c.telefono : '');
+                    li.addEventListener('click', () => seleccionarCliente(c));
+                    listaClientes.appendChild(li);
+                });
+                listaClientes.style.display = (d.sugerencias || []).length ? 'block' : 'none';
+            });
+    }, 250);
+});
+
+function seleccionarCliente(c) {
+    hidCli.value = c.id;
+    inputBuscar.value = c.nombre;
+    listaClientes.style.display = 'none';
+    document.getElementById('inputClienteNombre').value = c.nombre;
+    document.getElementById('inputClienteTel').value    = c.telefono || '';
+
+    // Cargar unidades del cliente
+    fetch(APP_URL + '/api/unidades_buscar.php?cliente_id=' + c.id)
+        .then(r => r.json())
+        .then(d => {
+            selUnidad.innerHTML = '<option value="">— Seleccionar unidad —</option>';
+            (d.unidades || []).forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = u.marca + ' ' + u.modelo + (u.placas ? ' — ' + u.placas : '') + (u.anio ? ' (' + u.anio + ')' : '');
+                opt.dataset.marca  = u.marca;
+                opt.dataset.modelo = u.modelo;
+                opt.dataset.anio   = u.anio   || '';
+                opt.dataset.placas = u.placas || '';
+                selUnidad.appendChild(opt);
+            });
+        });
+}
+
+selUnidad.addEventListener('change', function () {
+    const opt = this.options[this.selectedIndex];
+    hidUni.value = opt.value || '';
+    if (!opt.value) return;
+    document.getElementById('inputVhMarca').value  = opt.dataset.marca  || '';
+    document.getElementById('inputVhModelo').value = opt.dataset.modelo || '';
+    document.getElementById('inputVhAnio').value   = opt.dataset.anio   || '';
+    document.getElementById('inputVhPlacas').value = opt.dataset.placas || '';
+});
+
+document.getElementById('btnLimpiarCliente').addEventListener('click', function () {
+    hidCli.value = ''; hidUni.value = '';
+    inputBuscar.value = '';
+    selUnidad.innerHTML = '<option value="">— Seleccionar unidad —</option>';
+});
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('#listaClientesSug') && !e.target.closest('#inputClienteBuscar')) {
+        listaClientes.style.display = 'none';
+    }
+});
 </script>

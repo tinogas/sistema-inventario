@@ -183,6 +183,8 @@ class FacturaController extends Controller
             'notas'             => $this->postStr('notas'),
             'descuento_pct'     => $this->postFloat('descuento_pct'),
             'usuario_id'        => Auth::usuario()['id'],
+            'cliente_id'        => $this->postInt('cliente_id')  ?: null,
+            'unidad_id'         => $this->postInt('unidad_id')   ?: null,
         ];
 
         $productoIds = $_POST['producto_id']     ?? [];

@@ -157,6 +157,17 @@
         </a>
         <?php endif; ?>
 
+        <?php if (Auth::tienePermiso('clientes.ver')): ?>
+        <a href="<?= $appUrl ?>/?modulo=clientes" class="sidebar-link <?= ($_GET['modulo'] ?? '') === 'clientes' ? 'active' : '' ?>">
+            <i class="bi bi-people text-primary"></i> Clientes
+        </a>
+        <?php endif; ?>
+        <?php if (Auth::tienePermiso('bitacoras.ver')): ?>
+        <a href="<?= $appUrl ?>/?modulo=bitacoras" class="sidebar-link <?= ($_GET['modulo'] ?? '') === 'bitacoras' ? 'active' : '' ?>">
+            <i class="bi bi-journal-text text-info"></i> Bitácora
+        </a>
+        <?php endif; ?>
+
         <?php if (Auth::tienePermiso('productos.ver') || Auth::tienePermiso('proveedores.ver') || Auth::tienePermiso('mecanicos.ver') || Auth::tienePermiso('servicios.ver') || Auth::tienePermiso('categorias.ver') || Auth::tienePermiso('unidades.ver')): ?>
         <div class="sidebar-section mt-2">Catálogos</div>
         <?php if (Auth::tienePermiso('productos.ver')): ?>

@@ -18,8 +18,11 @@ class Router
         'sucursales' => ['clase' => 'SucursalController',  'archivo' => 'modules/sucursales/SucursalController.php'],
         'facturas'   => ['clase' => 'FacturaController',   'archivo' => 'modules/facturas/FacturaController.php'],
         'empresa'    => ['clase' => 'EmpresaController',   'archivo' => 'modules/empresa/EmpresaController.php'],
-        'backups'    => ['clase' => 'BackupController',    'archivo' => 'modules/backups/BackupController.php'],
-        'basedatos'  => ['clase' => 'BaseDatosController', 'archivo' => 'modules/basedatos/BaseDatosController.php'],
+        'backups'        => ['clase' => 'BackupController',          'archivo' => 'modules/backups/BackupController.php'],
+        'basedatos'      => ['clase' => 'BaseDatosController',       'archivo' => 'modules/basedatos/BaseDatosController.php'],
+        'clientes'       => ['clase' => 'ClienteController',         'archivo' => 'modules/clientes/ClienteController.php'],
+        'unidad_cliente' => ['clase' => 'UnidadClienteController',   'archivo' => 'modules/clientes/UnidadClienteController.php'],
+        'bitacoras'      => ['clase' => 'BitacoraController',        'archivo' => 'modules/bitacoras/BitacoraController.php'],
     ];
 
     public static function dispatch(): void

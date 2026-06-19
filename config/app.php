@@ -46,10 +46,14 @@ define('PERMISOS', [
         'traspasos.ver', 'traspasos.crear', 'traspasos.confirmar',
         'facturas.ver', 'facturas.crear', 'facturas.emitir',
         'reportes.ver',
+        'clientes.ver', 'clientes.crear', 'clientes.editar',
+        'bitacoras.ver', 'bitacoras.imprimir',
     ],
     ROL_CONSULTA => [
         'dashboard.ver',
         'productos.ver',
         'reportes.ver',
+        'clientes.ver',
+        'bitacoras.ver',
     ],
 ]);

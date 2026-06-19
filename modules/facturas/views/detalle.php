@@ -21,6 +21,12 @@ $badgeColor = match($factura['estado']) {
            class="btn btn-sm btn-outline-secondary" target="_blank">
             <i class="bi bi-printer me-1"></i> Imprimir
         </a>
+        <?php if (!empty($factura['unidad_id']) && Auth::tienePermiso('bitacoras.ver')): ?>
+        <a href="<?= $appUrl ?>/?modulo=bitacoras&unidad_id=<?= $factura['unidad_id'] ?>"
+           class="btn btn-sm btn-outline-info">
+            <i class="bi bi-journal-text me-1"></i> Bitácora de la unidad
+        </a>
+        <?php endif; ?>
         <?php endif; ?>
         <a href="<?= $appUrl ?>/?modulo=facturas" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Volver
@@ -35,7 +41,20 @@ $badgeColor = match($factura['estado']) {
             <div class="card-header bg-white fw-semibold border-0 pb-0"><i class="bi bi-person me-1"></i>Cliente y vehículo</div>
             <div class="card-body">
                 <table class="table table-sm mb-0">
-                    <tr><th>Cliente</th><td><?= htmlspecialchars($factura['cliente_nombre']) ?></td></tr>
+                    <tr>
+                        <th>Cliente</th>
+                        <td>
+                            <?php if (!empty($factura['cliente_id'])): ?>
+                            <a href="<?= $appUrl ?>/?modulo=clientes&accion=detalle&id=<?= $factura['cliente_id'] ?>"
+                               class="text-decoration-none fw-semibold">
+                                <?= htmlspecialchars($factura['cliente_nombre']) ?>
+                                <i class="bi bi-box-arrow-up-right ms-1 small"></i>
+                            </a>
+                            <?php else: ?>
+                            <?= htmlspecialchars($factura['cliente_nombre']) ?>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
                     <tr><th>Teléfono</th><td><?= htmlspecialchars($factura['cliente_tel'] ?: '—') ?></td></tr>
                     <tr><th>Vehículo</th><td><?= htmlspecialchars($factura['vh_marca'].' '.$factura['vh_modelo']) ?></td></tr>
                     <tr><th>Año</th><td><?= $factura['vh_anio'] ?></td></tr>

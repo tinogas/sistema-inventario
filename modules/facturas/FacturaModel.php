@@ -95,6 +95,29 @@ class FacturaModel extends Model
         $this->beginTransaction();
         try {
             $descuento_pct = max(0, min(100, (float)($cab['descuento_pct'] ?? 0)));
+            $cliente_id    = !empty($cab['cliente_id']) ? (int)$cab['cliente_id'] : null;
+            $unidad_id     = !empty($cab['unidad_id'])  ? (int)$cab['unidad_id']  : null;
+
+            // Si hay unidad, auto-rellenar datos de vehículo desde el catálogo
+            if ($unidad_id) {
+                $u = $this->fetchOne(
+                    'SELECT cu.marca, cu.modelo, cu.anio, cu.placas,
+                            c.nombre AS cli_nombre, c.telefono AS cli_tel
+                       FROM clientes_unidades cu
+                       INNER JOIN clientes c ON c.id = cu.cliente_id
+                      WHERE cu.id = :id',
+                    [':id' => $unidad_id]
+                );
+                if ($u) {
+                    $cab['vh_marca']        = $u['marca'];
+                    $cab['vh_modelo']       = $u['modelo'];
+                    $cab['vh_anio']         = $u['anio'];
+                    $cab['vh_placas']       = $u['placas'];
+                    $cab['cliente_nombre']  = $u['cli_nombre'];
+                    $cab['cliente_tel']     = $u['cli_tel'];
+                }
+            }
+
         $campos = [
                 ':sid'      => $cab['sucursal_id'],
                 ':cli'      => $cab['cliente_nombre'],
@@ -110,6 +133,8 @@ class FacturaModel extends Model
                 ':proneg'   => $cab['referencia_proneg']  ?: null,
                 ':notas'    => $cab['notas']              ?: null,
                 ':desc_pct' => $descuento_pct,
+                ':cid'      => $cliente_id,
+                ':uid2'     => $unidad_id,
             ];
 
             if ($id) {
@@ -118,7 +143,8 @@ class FacturaModel extends Model
                         sucursal_id=:sid, cliente_nombre=:cli, cliente_tel=:tel,
                         vh_marca=:marca, vh_modelo=:modelo, vh_anio=:anio, vh_placas=:placas,
                         mecanico_id=:mec, servicio_id=:ser, mano_obra=:mo, mano_obra_desc=:modesc,
-                        referencia_proneg=:proneg, notas=:notas, descuento_pct=:desc_pct
+                        referencia_proneg=:proneg, notas=:notas, descuento_pct=:desc_pct,
+                        cliente_id=:cid, unidad_id=:uid2
                      WHERE id=:fid AND estado='borrador'",
                     array_merge($campos, [':fid' => $id])
                 );
@@ -132,12 +158,14 @@ class FacturaModel extends Model
                         (folio, sucursal_id, cliente_nombre, cliente_tel,
                          vh_marca, vh_modelo, vh_anio, vh_placas,
                          mecanico_id, servicio_id, mano_obra, mano_obra_desc,
-                         referencia_proneg, notas, descuento_pct, estado, usuario_id)
+                         referencia_proneg, notas, descuento_pct, estado, usuario_id,
+                         cliente_id, unidad_id)
                      VALUES
                         (:folio, :sid, :cli, :tel,
                          :marca, :modelo, :anio, :placas,
                          :mec, :ser, :mo, :modesc,
-                         :proneg, :notas, :desc_pct, 'borrador', :uid)",
+                         :proneg, :notas, :desc_pct, 'borrador', :uid,
+                         :cid, :uid2)",
                     $campos
                 );
                 $id = $this->lastInsertId();
@@ -206,11 +234,45 @@ class FacturaModel extends Model
                 [':mid' => $movId, ':id' => $id]
             );
 
+            // Si la factura tiene unidad del catálogo, crear entrada en bitácora
+            if ($factura['unidad_id']) {
+                // Recargar factura para obtener totales actualizados
+                $factura = $this->getById($id);
+                $this->crearBitacora($factura, $detalle);
+            }
+
             $this->commit();
         } catch (Exception $e) {
             $this->rollback();
             throw $e;
         }
+    }
+
+    private function crearBitacora(array $factura, array $detalle): void
+    {
+        require_once BASE_PATH . '/modules/bitacoras/BitacoraModel.php';
+
+        $snapshot = json_encode(array_map(fn($d) => [
+            'nombre'          => $d['producto_nombre'],
+            'cantidad'        => (float)$d['cantidad'],
+            'precio_unitario' => (float)$d['precio_unitario'],
+        ], $detalle), JSON_UNESCAPED_UNICODE);
+
+        $trabajos = $factura['mano_obra_desc'] ?: ($factura['servicio_nombre'] !== '—' ? $factura['servicio_nombre'] : null);
+
+        $bm = new BitacoraModel();
+        $bm->crear([
+            'unidad_id'            => $factura['unidad_id'],
+            'factura_id'           => $factura['id'],
+            'fecha_servicio'       => date('Y-m-d', strtotime($factura['fecha_emision'])),
+            'mecanico_id'          => $factura['mecanico_id'] ?: null,
+            'descripcion'          => $factura['notas'] ?: null,
+            'trabajos_realizados'  => $trabajos,
+            'productos_snapshot'   => $snapshot,
+            'mano_obra'            => $factura['mano_obra'] ?? 0,
+            'subtotal'             => $factura['subtotal']  ?? 0,
+            'total'                => $factura['total']     ?? 0,
+        ]);
     }
 
     // ---- Marcar pagada ----
